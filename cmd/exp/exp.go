@@ -9,6 +9,7 @@ type User struct {
 	Name string
 	Age int
 	Bio string
+	Skills map[string]string
 }
 
 func main() {
@@ -20,7 +21,12 @@ func main() {
 	user := User{
 		Name: "John Smith",
 		Age: 123,
-		Bio: "<script>alert(\"Haha, you have been h4x0r3d!\");</script>",
+		Bio: "",
+		Skills: map[string]string{
+			"A": "JS",
+			"B": "PHP",
+			"C": "Python",
+		},
 	}
 
 	err = t.Execute(os.Stdout, user)
