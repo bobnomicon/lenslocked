@@ -3,42 +3,26 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
 )
 
-func Connect() error {
-	// Try to connect
-	// Pretend we got an error
-	defer fmt.Println("Deferred!")
-	err := errors.New("connection failed")
-	fmt.Println(err)
-	return err
+var ErrNotFound = errors.New("not found")
+var ErrLiar = errors.New("liar")
+
+func A() error {
+	return ErrLiar
 }
 
-func CreateUser() error {
-	err := Connect()
+func B() error {
+	err := A()
 	if err != nil {
-		return fmt.Errorf("create user: %w", err)
-	}
-	return nil
-}
-
-func CreateOrg() error {
-	err := CreateUser()
-	if err != nil {
-		return fmt.Errorf("create org: %w", err)
+		return fmt.Errorf("b: %w", err)
 	}
 	return nil
 }
 
 func main() {
-	err := CreateUser()
-	if err != nil {
-		log.Println(err)
-	}
-
-	err = CreateOrg()
-	if err != nil {
-		log.Println(err)
+	err := B()
+	if errors.Is(err, ErrNotFound) {
+		fmt.Println(err)
 	}
 }
