@@ -26,7 +26,7 @@ func main() {
 	// Routes
 	r.Get("/", controllers.StaticHandler(homeTemplate))
 	r.Get("/contact", controllers.StaticHandler(contactTemplate))	
-	r.Get("/faq", controllers.StaticHandler(faqTemplate))
+	r.Get("/faq", controllers.FAQ(faqTemplate))
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not found", http.StatusNotFound)
