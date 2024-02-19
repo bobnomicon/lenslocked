@@ -1,28 +1,22 @@
 package main
 
 import (
-	"errors"
 	"fmt"
+	"strings"
 )
 
-var ErrNotFound = errors.New("not found")
-var ErrLiar = errors.New("liar")
-
-func A() error {
-	return ErrLiar
-}
-
-func B() error {
-	err := A()
-	if err != nil {
-		return fmt.Errorf("b: %w", err)
+func Join(vals ...string) string {
+	var sb strings.Builder
+	for i, s := range vals {
+		sb.WriteString(s)
+		if i < len(vals) - 1 {
+			sb.WriteString(", ")
+		}
 	}
-	return nil
+	return sb.String()
 }
 
 func main() {
-	err := B()
-	if errors.Is(err, ErrNotFound) {
-		fmt.Println(err)
-	}
+	strings := []string{"the", "quick", "brown", "fox"}
+	fmt.Println(Join(strings...))
 }
