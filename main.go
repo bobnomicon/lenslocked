@@ -13,9 +13,9 @@ import (
 
 func main() {
 	// Parse templates
-	homeTemplate := views.Must(views.ParseFS(templates.FS, "layout-page.gohtml", "home-page.gohtml"))
-	contactTemplate := views.Must(views.ParseFS(templates.FS, "layout-page.gohtml", "contact-page.gohtml"))
-	faqTemplate := views.Must(views.ParseFS(templates.FS, "layout-page.gohtml", "faq-page.gohtml"))
+	homeTemplate := views.Must(views.ParseFS(templates.FS, "home.gohtml", "tailwind.gohtml"))
+	contactTemplate := views.Must(views.ParseFS(templates.FS, "contact.gohtml", "tailwind.gohtml"))
+	faqTemplate := views.Must(views.ParseFS(templates.FS, "faq.gohtml", "tailwind.gohtml"))
 
 	// Init router
 	r := chi.NewRouter()	
