@@ -16,6 +16,7 @@ func main() {
 	homeTemplate := views.Must(views.ParseFS(templates.FS, "home.gohtml", "tailwind.gohtml"))
 	contactTemplate := views.Must(views.ParseFS(templates.FS, "contact.gohtml", "tailwind.gohtml"))
 	faqTemplate := views.Must(views.ParseFS(templates.FS, "faq.gohtml", "tailwind.gohtml"))
+	signupTemplate := views.Must(views.ParseFS(templates.FS, "signup.gohtml", "tailwind.gohtml"))
 
 	// Init router
 	r := chi.NewRouter()	
@@ -27,6 +28,7 @@ func main() {
 	r.Get("/", controllers.StaticHandler(homeTemplate))
 	r.Get("/contact", controllers.StaticHandler(contactTemplate))	
 	r.Get("/faq", controllers.FAQ(faqTemplate))
+	r.Get("/signup", controllers.StaticHandler(signupTemplate))
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not found", http.StatusNotFound)
