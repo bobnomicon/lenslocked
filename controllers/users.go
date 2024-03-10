@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 )
 
@@ -11,5 +12,26 @@ type Users struct {
 }
 
 func (u Users) New(w http.ResponseWriter, r *http.Request) {
-	u.Templates.New.Execute(w, nil)
+	var data struct {
+		Email string
+	}
+
+	data.Email = r.FormValue("email")
+	u.Templates.New.Execute(w, data)
+}
+
+func (u Users) Create(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Unable to parse form for submission.", http.StatusBadRequest)
+		return
+	}
+
+	if r.PostForm.Get("password_confirm") != r.PostForm.Get("password") {
+		http.Error(w, "Passwords do not match!", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Fprintf(w, "<p>Email: %s</p>", r.PostForm.Get("email"))
+	fmt.Fprintf(w, "<p>Password: %s</p>", r.PostForm.Get("password"))
 }
