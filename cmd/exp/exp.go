@@ -33,7 +33,7 @@ func (b *Builder) Name(name string) *Builder {
 }
 
 func (b *Builder) Role(role string) *Builder {
-	if role == "Manager" {
+	if strings.ToLower(role) == "manager" {
 		b.e.MinSalary = 20000
 		b.e.MaxSalary = 60000
 	}
@@ -54,7 +54,7 @@ func EmployeeName(name string) Option {
 
 func EmployeeRole(role string) Option {
 	return func(e *Employee) error {
-		if role == "Manager" {
+		if strings.ToLower(role) == "manager" {
 			e.MinSalary = 20000
 			e.MaxSalary = 60000
 		}
@@ -75,6 +75,7 @@ func NewEmployee(opts ...Option) (*Employee, error) {
 }
 
 
+// String builder
 func Join(vals ...string) string {
 	var sb strings.Builder
 	for i, s := range vals {
@@ -88,18 +89,19 @@ func Join(vals ...string) string {
 
 
 func main() {
-	b := &Builder{}
+	// Builder pattern:
+	var b Builder
 	e1, err := b.Name("Robert Miller").Role("Web Developer II").Build()
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("Employee 1:", e1)
 
+	// Functional options pattern:
 	e2, err := NewEmployee(EmployeeName("Robert Miller"), EmployeeRole("Manager"))
 	if err != nil {
 		panic(err)
 	}
-
-	fmt.Println("Employee 1:", e1)
 	fmt.Println("Employee 2:", e2)
 
 	// Squirrel builder version:
@@ -110,6 +112,7 @@ func main() {
 	fmt.Println(sql)
 	fmt.Println(args)
 	
-	// strings := []string{"the", "quick", "brown", "fox"}
-	// fmt.Println(Join(strings...))
+	// String builder
+	strings := []string{"the", "quick", "brown", "fox"}
+	fmt.Println(Join(strings...))
 }
