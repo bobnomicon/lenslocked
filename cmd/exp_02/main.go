@@ -1,47 +1,15 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
-	"os"
 
-	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/joho/godotenv"
 	"github.com/operas-logicas/lenslocked/models"
 )
 
-type PostgresConfig struct {
-	Host string
-	Port string
-	User string
-	Password string
-	DBName string
-	SSLMode string
-}
-
-func (cfg PostgresConfig) String() string {
-	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName, cfg.SSLMode)
-}
-
-func main() {
-	// Load .env
-	err := godotenv.Load()
-	if err != nil {
-		panic(err)
-	}
-
-	// Postgres config
-	cfg := PostgresConfig{
-		Host: os.Getenv("POSTGRES_HOST"),
-		Port: os.Getenv("POSTGRES_PORT"),
-		User: os.Getenv("POSTGRES_USER"),
-		Password: os.Getenv("POSTGRES_PASSWORD"),
-		DBName: os.Getenv("POSTGRES_DBNAME"),
-		SSLMode: os.Getenv("POSTGRES_SSLMODE"),
-	}
-	
+func main() {	
 	// Open db connection
-	db, err := sql.Open("pgx", cfg.String())
+	cfg := models.DefaultPostgresConfig()
+	db, err := models.Open(cfg)
 	if err != nil {
 		panic(err)
 	}

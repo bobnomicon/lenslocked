@@ -245,3 +245,6 @@ lenslocked
 
 # Modd
 modd.conf
+
+# IDEs
+.vscode
