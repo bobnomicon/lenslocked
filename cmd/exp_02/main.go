@@ -6,7 +6,7 @@ import (
 	"github.com/operas-logicas/lenslocked/models"
 )
 
-func main() {	
+func main() {
 	// Open db connection
 	cfg := models.DefaultPostgresConfig()
 	db, err := models.Open(cfg)
