@@ -26,7 +26,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Database connected.")
+	fmt.Println("Database connected")
 
 	// Init model services
 	usersController := controllers.Users{

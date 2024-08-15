@@ -35,6 +35,12 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "<p>Email: %s</p>", r.PostForm.Get("email"))
-	fmt.Fprintf(w, "<p>Password: %s</p>", r.PostForm.Get("password"))
+	user, err := u.UserService.Create(r.PostForm.Get("email"), r.PostForm.Get("password"))
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Something went wrong!", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, "User created: %+v", user)
 }
