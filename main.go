@@ -42,6 +42,7 @@ func main() {
 
 	// Parse users templates
 	usersController.Templates.New = views.Must(views.ParseFS(templates.FS, "signup.gohtml", "tailwind.gohtml"))
+	usersController.Templates.SignIn = views.Must(views.ParseFS(templates.FS, "signin.gohtml", "tailwind.gohtml"))
 
 	// Init router
 	r := chi.NewRouter()	
@@ -49,13 +50,18 @@ func main() {
 	// Middlewares
 	r.Use(middleware.Logger)
 
-	// Routes
+	// Static routes
 	r.Get("/", controllers.StaticHandler(homeTemplate))
 	r.Get("/contact", controllers.StaticHandler(contactTemplate))	
 	r.Get("/faq", controllers.FAQ(faqTemplate))
+
+	// Users routes
+	r.Get("/signin", usersController.SignIn)
+	r.Post("/signin", usersController.Authenticate)
 	r.Get("/signup", usersController.New)
 	r.Post("/signup", usersController.Create)
 
+	// 404 route
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not found", http.StatusNotFound)
 	})

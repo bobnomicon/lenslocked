@@ -44,7 +44,7 @@ func DefaultPostgresConfig() PostgresConfig {
 func Open(config PostgresConfig) (*sql.DB, error) {
 	db, err := sql.Open("pgx", config.String())
 	if err != nil {
-		return nil, fmt.Errorf("Open: %w", err)
+		return nil, fmt.Errorf("open: %w", err)
 	}
 	return db, nil
 }
