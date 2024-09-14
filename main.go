@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/gorilla/csrf"
 	"github.com/joho/godotenv"
 	"github.com/operas-logicas/lenslocked/controllers"
 	"github.com/operas-logicas/lenslocked/models"
@@ -55,6 +57,12 @@ func main() {
 	r := chi.NewRouter()	
 
 	// Middlewares
+	csrfMiddleware := csrf.Protect(
+		[]byte(os.Getenv("CSRF_AUTH_KEY")),
+		// TODO! Fix before deploying to production:
+		csrf.Secure(false),
+	)
+	r.Use(csrfMiddleware)
 	r.Use(middleware.Logger)
 
 	// Static routes

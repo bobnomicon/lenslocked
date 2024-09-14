@@ -23,19 +23,17 @@ func (t Template) Execute(w http.ResponseWriter, data interface{}) {
 	}
 }
 
-func Parse(filepath string) (Template, error) {
-	htmlTpl, err := template.ParseFiles(filepath)
-	if err != nil {
-		return Template{}, fmt.Errorf("parsing template: %w", err)
-	}
-
-	return Template{
-		htmlTpl: htmlTpl,
-	}, nil
-}
-
 func ParseFS(fs fs.FS, pattern ...string) (Template, error) {
-	htmlTpl, err := template.ParseFS(fs, pattern...)
+	htmlTpl := template.New(pattern[0])
+	htmlTpl = htmlTpl.Funcs(
+		template.FuncMap{
+			"csrfField": func() template.HTML {
+				return `<input type="hidden" />`
+			},
+		},
+	)
+
+	htmlTpl, err := htmlTpl.ParseFS(fs, pattern...)
 	if err != nil {
 		return Template{}, fmt.Errorf("parsing template: %w", err)
 	}
