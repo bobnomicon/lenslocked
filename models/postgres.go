@@ -6,7 +6,6 @@ import (
 	"os"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/joho/godotenv"
 )
 
 type PostgresConfig struct {
@@ -23,12 +22,6 @@ func (cfg PostgresConfig) String() string {
 }
 
 func DefaultPostgresConfig() PostgresConfig {
-	// Load .env
-	err := godotenv.Load()
-	if err != nil {
-		panic(err)
-	}
-
 	// Postgres config
 	return PostgresConfig{
 		Host: os.Getenv("POSTGRES_HOST"),

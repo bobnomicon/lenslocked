@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/joho/godotenv"
 	"github.com/operas-logicas/lenslocked/controllers"
 	"github.com/operas-logicas/lenslocked/models"
 	"github.com/operas-logicas/lenslocked/templates"
@@ -13,6 +14,12 @@ import (
 )
 
 func main() {
+	// Load .env
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
+	
 	// Open DB connection
 	cfg := models.DefaultPostgresConfig()
 	db, err := models.Open(cfg)
