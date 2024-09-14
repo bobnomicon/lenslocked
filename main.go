@@ -41,7 +41,7 @@ func main() {
 	faqTemplate := views.Must(views.ParseFS(templates.FS, "faq.gohtml", "tailwind.gohtml"))
 
 	// Parse users templates
-	usersController.Templates.New = views.Must(views.ParseFS(templates.FS, "signup.gohtml", "tailwind.gohtml"))
+	usersController.Templates.SignUp = views.Must(views.ParseFS(templates.FS, "signup.gohtml", "tailwind.gohtml"))
 	usersController.Templates.SignIn = views.Must(views.ParseFS(templates.FS, "signin.gohtml", "tailwind.gohtml"))
 
 	// Init router
@@ -58,7 +58,7 @@ func main() {
 	// Users routes
 	r.Get("/signin", usersController.SignIn)
 	r.Post("/signin", usersController.Authenticate)
-	r.Get("/signup", usersController.New)
+	r.Get("/signup", usersController.SignUp)
 	r.Post("/signup", usersController.Create)
 
 	// 404 route

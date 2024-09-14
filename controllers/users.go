@@ -9,7 +9,7 @@ import (
 
 type Users struct {
 	Templates struct {
-		New Template
+		SignUp Template
 		SignIn Template
 	}
 	UserService *models.UserService
@@ -17,13 +17,13 @@ type Users struct {
 
 /******** GET handlers ********/
 
-func (u Users) New(w http.ResponseWriter, r *http.Request) {
+func (u Users) SignUp(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		Email string
 	}
 
 	data.Email = r.FormValue("email")
-	u.Templates.New.Execute(w, data)
+	u.Templates.SignUp.Execute(w, data)
 }
 
 func (u Users) SignIn(w http.ResponseWriter, r *http.Request) {
