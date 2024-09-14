@@ -35,6 +35,17 @@ func (u Users) SignIn(w http.ResponseWriter, r *http.Request) {
 	u.Templates.SignIn.Execute(w, data)
 }
 
+func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
+	email, err := r.Cookie("email")
+	if err != nil {
+		fmt.Fprint(w, "No current user.")
+		return
+	}
+
+	fmt.Fprintf(w, "Current user: %s\n", email.Value)
+	fmt.Fprintf(w, "Headers: %+v\n", r.Header)
+}
+
 
 /******** POST handlers ********/
 
@@ -73,5 +84,13 @@ func (u Users) Authenticate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid credentials!", http.StatusUnauthorized)
 	}
 
-	fmt.Fprintf(w, "User authenticated: %+v", user)
+	cookie := http.Cookie{
+		Name: "email",
+		Value: user.Email,
+		Path: "/",
+		HttpOnly: true,
+	}
+	http.SetCookie(w, &cookie)
+
+	fmt.Fprint(w, "User account authenticated!")
 }

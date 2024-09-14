@@ -60,6 +60,7 @@ func main() {
 	r.Post("/signin", usersController.Authenticate)
 	r.Get("/signup", usersController.SignUp)
 	r.Post("/signup", usersController.Create)
+	r.Get("/users/me", usersController.CurrentUser)
 
 	// 404 route
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
