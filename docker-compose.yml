@@ -1,5 +1,13 @@
 services:
-  db:
+  adminer:
+    image: adminer
+    restart: always
+    environment:
+      ADMINER_DESIGN: dracula
+    ports:
+      - 3333:8080
+
+  postgres:
     image: postgres
     restart: always
     environment:
@@ -10,11 +18,3 @@ services:
       - ../lenslocked-data:/var/lib/postgresql/data
     ports:
       - ${POSTGRES_PORT}:5432
-
-  adminer:
-    image: adminer
-    restart: always
-    environment:
-      ADMINER_DESIGN: dracula
-    ports:
-      - 3333:8080
