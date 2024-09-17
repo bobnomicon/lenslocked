@@ -9,14 +9,13 @@ import (
 
 func main() {
 	secretKey := "secret-key"
-
-	password := "secretpassword"
+	cookie := `{"id": 123, "email": "robert@robertmiller.com"}`
 
 	// Setup hashing function using HMAC
 	h := hmac.New(sha256.New, []byte(secretKey))
 
 	// Write data to hashing function
-	h.Write([]byte(password))
+	h.Write([]byte(cookie))
 
 	// Get the resulting hash
 	result := h.Sum(nil)

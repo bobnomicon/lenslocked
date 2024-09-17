@@ -1,8 +1,10 @@
 package views
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
+	"io"
 	"io/fs"
 	"log"
 	"net/http"
@@ -31,17 +33,23 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface
 			},
 		},
 	)
-
+	
 	// Set the content type header
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	// Execute the cloned template
-	err = htmlTpl.Execute(w, data)
+	// Create a buffer to store the final result from template execution
+	var buf bytes.Buffer 
+
+	// Execute the cloned template	
+	err = htmlTpl.Execute(&buf, data)
 	if err != nil {
 		log.Printf("executing template: %v", err)
 		http.Error(w, "There was an error executing the template.", http.StatusInternalServerError)
 		return
 	}
+
+	// Copy buffer to response writer if no errors (this is not efficient for large templates)
+	io.Copy(w, &buf)
 }
 
 func ParseFS(fs fs.FS, pattern ...string) (Template, error) {
@@ -49,8 +57,8 @@ func ParseFS(fs fs.FS, pattern ...string) (Template, error) {
 	htmlTpl := template.New(pattern[0])
 	htmlTpl = htmlTpl.Funcs(
 		template.FuncMap{
-			"csrfField": func() template.HTML {
-				return `<input type="hidden" />`
+			"csrfField": func() (template.HTML, error) {
+				return "", fmt.Errorf("csrfField not implemented")
 			},
 		},
 	)
