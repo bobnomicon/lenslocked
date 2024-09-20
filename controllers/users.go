@@ -38,7 +38,7 @@ func (u Users) SignIn(w http.ResponseWriter, r *http.Request) {
 func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	email, err := r.Cookie("email")
 	if err != nil {
-		fmt.Fprint(w, "No current user.")
+		http.Redirect(w, r, "/signin", http.StatusTemporaryRedirect)
 		return
 	}
 
