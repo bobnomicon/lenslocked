@@ -13,6 +13,7 @@ type Users struct {
 		SignIn Template
 	}
 	UserService *models.UserService
+	SessionService *models.SessionService
 }
 
 /******** GET handlers ********/
@@ -36,14 +37,21 @@ func (u Users) SignIn(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
-	email, err := r.Cookie("email")
+	tokenCookie, err := r.Cookie("session")
 	if err != nil {
-		http.Redirect(w, r, "/signin", http.StatusTemporaryRedirect)
+		fmt.Println(err)
+		http.Redirect(w, r, "/signin", http.StatusFound)
 		return
 	}
 
-	fmt.Fprintf(w, "Current user: %s\n", email.Value)
-	fmt.Fprintf(w, "Headers: %+v\n", r.Header)
+	user, err := u.SessionService.User(tokenCookie.Value)
+	if err != nil {
+		fmt.Println(err)
+		http.Redirect(w, r, "/signin", http.StatusFound)
+		return
+	}
+
+	fmt.Fprintf(w, "Current user: %s\n", user.Email)
 }
 
 
@@ -62,6 +70,7 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Create user
 	user, err := u.UserService.Create(r.PostForm.Get("email"), r.PostForm.Get("password"))
 	if err != nil {
 		fmt.Println(err)
@@ -69,7 +78,24 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "User created: %+v", user)
+	// User successfully created, so create new session for user
+	session, err := u.SessionService.Create(user.ID)
+	if err != nil {
+		fmt.Println(err)
+		http.Redirect(w, r, "/signin", http.StatusFound)
+		return
+	}
+
+	// Set cookie with session token
+	cookie := http.Cookie{
+		Name: "session",
+		Value: session.Token,
+		Path: "/",
+		HttpOnly: true,
+	}
+	http.SetCookie(w, &cookie)
+
+	http.Redirect(w, r, "/users/me", http.StatusFound)
 }
 
 func (u Users) Authenticate(w http.ResponseWriter, r *http.Request) {
@@ -78,19 +104,30 @@ func (u Users) Authenticate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, ".", http.StatusBadRequest)
 	}
 
+	// Authenticate user
 	user, err := u.UserService.Authenticate(r.PostForm.Get("email"), r.PostForm.Get("password"))
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Invalid credentials!", http.StatusUnauthorized)
+		return
 	}
 
+	// User successfully authenticated, so create new session for user
+	session, err := u.SessionService.Create(user.ID)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Something went wrong!", http.StatusInternalServerError)
+		return
+	}
+
+	// Set cookie with session token
 	cookie := http.Cookie{
-		Name: "email",
-		Value: user.Email,
+		Name: "session",
+		Value: session.Token,
 		Path: "/",
 		HttpOnly: true,
 	}
 	http.SetCookie(w, &cookie)
 
-	fmt.Fprint(w, "User account authenticated!")
+	http.Redirect(w, r, "/users/me", http.StatusFound)
 }
