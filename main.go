@@ -38,10 +38,12 @@ func main() {
 	fmt.Println("Database connected")
 
 	// Init model services
+	userService := models.UserService{DB: db}
+	sessionService := models.SessionService{DB: db}
+
 	usersController := controllers.Users{
-		UserService: &models.UserService{
-			DB: db,
-		},
+		UserService: &userService,
+		SessionService: &sessionService,
 	}
 
 	// Parse static templates

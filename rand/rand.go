@@ -26,9 +26,3 @@ func String(n int) (string, error) {
 	}
 	return base64.URLEncoding.EncodeToString(b), nil
 }
-
-// Returns a fixed-size (32 bytes) session token.
-const SessionTokenBytes = 32
-func SessionToken() (string, error) {
-	return String(SessionTokenBytes)
-}

@@ -1,6 +1,18 @@
 package models
 
-import "database/sql"
+import (
+	"crypto/sha256"
+	"database/sql"
+	"encoding/base64"
+	"fmt"
+
+	"github.com/operas-logicas/lenslocked/rand"
+)
+
+const (
+	// The minimum number of bytes to use for each session token.
+	MinBytesPerToken = 32
+)
 
 type Session struct {
 	ID int
@@ -12,12 +24,47 @@ type Session struct {
 
 type SessionService struct {
 	DB *sql.DB
+	BytesPerToken int // How many bytes to use when generating session token. If not set or is < MinBytesPerToken const, it will be ignored and MinBytesPerToken used instead.
+}
+
+func (ss *SessionService) hash(token string) string {
+	tokenHash := sha256.Sum256([]byte(token))
+	// base64 encode the data into a string
+	return base64.URLEncoding.EncodeToString(tokenHash[:])
 }
 
 // Creates a new session for the provided user. The session token will be returned in the Token field of the Session type, but only the hashed session token will be stored in the db.
 func (ss *SessionService) Create(userID int) (*Session, error) {
-	// TODO
-	return nil, nil
+	// Create the session token
+	bytesPerToken := ss.BytesPerToken
+	if bytesPerToken < MinBytesPerToken {
+		bytesPerToken = MinBytesPerToken
+	}
+	token, err := rand.String(bytesPerToken)
+	if err != nil {
+		return nil, fmt.Errorf("create session: %w", err)
+	}
+
+	// Hash session token
+	tokenHash := ss.hash(token)
+
+	session := Session{
+		UserID: userID,
+		Token: token,
+		TokenHash: tokenHash,
+	}
+
+	// Store hashed session token in the db
+	row := ss.DB.QueryRow(`
+		INSERT INTO sessions (user_id, token_hash)
+		VALUES ($1, $2) RETURNING id;
+	`, userID, tokenHash)
+	err = row.Scan(&session.ID)
+	if err != nil {
+		return nil, fmt.Errorf("create session: %w", err)
+	}
+
+	return &session, nil
 }
 
 func (ss *SessionService) User(token string) (*User, error) {
