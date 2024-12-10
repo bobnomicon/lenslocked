@@ -54,12 +54,24 @@ func (ss *SessionService) Create(userID int) (*Session, error) {
 		TokenHash: tokenHash,
 	}
 
-	// Store hashed session token in the db
+	// Update session in db with hashed session token
 	row := ss.DB.QueryRow(`
-		INSERT INTO sessions (user_id, token_hash)
-		VALUES ($1, $2) RETURNING id;
+		UPDATE sessions
+		SET token_hash = $2
+		WHERE user_id = $1
+		RETURNING id;
 	`, userID, tokenHash)
 	err = row.Scan(&session.ID)
+
+	if err == sql.ErrNoRows {
+		// If no row exists, create new session in db
+		row = ss.DB.QueryRow(`
+			INSERT INTO sessions (user_id, token_hash)
+			VALUES ($1, $2) RETURNING id;
+		`, userID, tokenHash)
+		err = row.Scan(&session.ID)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("create session: %w", err)
 	}
@@ -68,6 +80,47 @@ func (ss *SessionService) Create(userID int) (*Session, error) {
 }
 
 func (ss *SessionService) User(token string) (*User, error) {
-	// TODO
-	return nil, nil
+	// Hash session token
+	tokenHash := ss.hash(token)
+
+	// Query db for session with token hash
+	var user User
+	row := ss.DB.QueryRow(`
+		SELECT user_id
+		FROM sessions
+		WHERE token_hash = $1;
+	`, tokenHash)
+	err := row.Scan(&user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("user: %w", err)
+	}
+
+	// Query db for user
+	row = ss.DB.QueryRow(`
+		SELECT email, password_hash
+		FROM users
+		WHERE id = $1;
+	`, user.ID)
+	err = row.Scan(&user.Email, &user.PasswordHash)
+	if err != nil {
+		return nil, fmt.Errorf("user: %w", err)
+	}
+
+	return &user, nil
+}
+
+func (ss *SessionService) Delete(token string) error {
+	// Hash session token
+	tokenHash := ss.hash(token)
+
+	// Delete session from db
+	_, err := ss.DB.Exec(`
+		DELETE FROM sessions
+		WHERE token_hash = $1;
+	`, tokenHash)
+	if err != nil {
+		return fmt.Errorf("delete session: %w", err)
+	}
+
+	return nil
 }
