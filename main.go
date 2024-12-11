@@ -75,6 +75,7 @@ func main() {
 	// Users routes
 	r.Get("/signin", usersController.SignIn)
 	r.Post("/signin", usersController.Authenticate)
+	r.Post("/signout", usersController.SignOut)
 	r.Get("/signup", usersController.SignUp)
 	r.Post("/signup", usersController.Create)
 	r.Get("/users/me", usersController.CurrentUser)

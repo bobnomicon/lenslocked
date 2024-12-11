@@ -117,3 +117,24 @@ func (u Users) Authenticate(w http.ResponseWriter, r *http.Request) {
   setCookie(w, CookieSession, session.Token)
 	http.Redirect(w, r, "/users/me", http.StatusFound)
 }
+
+func (u Users) SignOut(w http.ResponseWriter, r *http.Request) {
+  token, err := readCookie(r, CookieSession)
+  if err != nil {
+    fmt.Println(err)
+    http.Redirect(w, r, "/signin", http.StatusFound)
+    return
+  }
+
+  // Delete user's session
+  err = u.SessionService.Delete(token)
+  if err != nil {
+    fmt.Println(err)
+    http.Error(w, "Something went wrong!", http.StatusInternalServerError)
+    return
+  }
+
+  // Delete session cookie
+  deleteCookie(w, CookieSession)
+  http.Redirect(w, r, "/signin", http.StatusFound)
+}
