@@ -19,7 +19,13 @@
                 </div>
 
                 <div class="space-x-4">
-                    <a href="/signin" class="px-4 py-2 bg-blue-700 hover:bg-blue-600 rounded">Sign In</a>
+                    <form action="/signout" method="post" class="inline pr-4">
+                        <div class="hidden">
+                            {{ csrfField }}
+                        </div>
+                        <button type="submit">Sign Out</button>
+                    </form>
+                    <a href="/signin" class="pr-4">Sign In</a>
                     <a href="/signup" class="px-4 py-2 bg-blue-700 hover:bg-blue-600 rounded">Sign Up</a>
                 </div>
             </nav>
