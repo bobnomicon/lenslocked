@@ -56,7 +56,7 @@ func main() {
 	usersController.Templates.SignIn = views.Must(views.ParseFS(templates.FS, "signin.gohtml", "tailwind.gohtml"))
 
 	// Init router
-	r := chi.NewRouter()	
+	r := chi.NewRouter()
 
 	// Middlewares
 	csrfMiddleware := csrf.Protect(
