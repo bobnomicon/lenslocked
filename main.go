@@ -24,6 +24,7 @@ func main() {
 	
 	// Open DB connection
 	cfg := models.DefaultPostgresConfig()
+	// fmt.Println(cfg.String())
 	db, err := models.Open(cfg)
 	if err != nil {
 		panic(err)
