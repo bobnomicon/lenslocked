@@ -3,9 +3,11 @@ package models
 import (
 	"database/sql"
 	"fmt"
+	"io/fs"
 	"os"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/pressly/goose/v3"
 )
 
 type PostgresConfig struct {
@@ -40,4 +42,34 @@ func Open(config PostgresConfig) (*sql.DB, error) {
 		return nil, fmt.Errorf("open: %w", err)
 	}
 	return db, nil
+}
+
+func Migrate(db *sql.DB, dir string) error {
+	err := goose.SetDialect("postgres")
+	if err != nil {
+		return fmt.Errorf("migrate: %w", err)
+	}
+	
+	err = goose.Up(db, dir)
+	if err != nil {
+		return fmt.Errorf("migrate: %w", err)
+	}
+
+	return nil
+}
+
+func MigrateFS(db *sql.DB, migrationsFS fs.FS, dir string) error {
+	// If dir is an empty string, assume current directory
+	if dir == "" {
+		dir = "."
+	}
+
+	goose.SetBaseFS(migrationsFS)
+
+	defer func() {
+		// Remove FS in case goose is used elsewhere and doesn't want to use this FS
+		goose.SetBaseFS(nil)
+	}()
+
+	return Migrate(db, dir)
 }

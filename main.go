@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/joho/godotenv"
 	"github.com/operas-logicas/lenslocked/controllers"
+	"github.com/operas-logicas/lenslocked/migrations"
 	"github.com/operas-logicas/lenslocked/models"
 	"github.com/operas-logicas/lenslocked/templates"
 	"github.com/operas-logicas/lenslocked/views"
@@ -37,6 +38,12 @@ func main() {
 		panic(err)
 	}
 	fmt.Println("Database connected")
+
+	// Run migrations
+	err = models.MigrateFS(db, migrations.FS, ".")
+	if err != nil {
+		panic(err)
+	}
 
 	// Init model services
 	userService := models.UserService{DB: db}
