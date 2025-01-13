@@ -240,8 +240,9 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/go,macos,windows,linux,node
 
-# Ignore the lenslocked binary
+# Ignore binaries
 lenslocked
+goose-psql
 
 # Modd
 modd.conf

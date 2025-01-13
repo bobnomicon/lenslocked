@@ -1,6 +1,6 @@
 module github.com/operas-logicas/lenslocked
 
-go 1.22.0
+go 1.23.2
 
 require github.com/go-chi/chi/v5 v5.0.11
 
