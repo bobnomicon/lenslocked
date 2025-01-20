@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	customCtx "github.com/operas-logicas/lenslocked/context"
+	"github.com/operas-logicas/lenslocked/models"
 )
 
 type ctxKey string
@@ -25,6 +28,17 @@ func main() {
 	}
 
 	fmt.Println(strings.HasPrefix(stringValue, "b"))
+
+	// Testing custom context package to store/retrieve users
+	ctx = context.Background()
+	user := models.User{
+		Email: "robert@test.com",
+	}
+
+	ctx = customCtx.WithUser(ctx, &user)
+
+	retrievedUser := customCtx.User(ctx)
+	fmt.Println(retrievedUser.Email)
 
 	// Type conversion/assertion
 	fmt.Printf("Type of '%v': %T\n", anyValue, anyValue) // '%T' is the type
