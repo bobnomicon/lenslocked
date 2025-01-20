@@ -45,12 +45,16 @@ func main() {
 		panic(err)
 	}
 
-	// Init model services
+	// Init services
 	userService := models.UserService{DB: db}
 	sessionService := models.SessionService{DB: db}
 
 	usersController := controllers.Users{
 		UserService: &userService,
+		SessionService: &sessionService,
+	}
+
+	userMiddleware := controllers.UserMiddleware{
 		SessionService: &sessionService,
 	}
 
@@ -67,13 +71,15 @@ func main() {
 	r := chi.NewRouter()
 
 	// Middlewares
-	csrfMiddleware := csrf.Protect(
-		[]byte(os.Getenv("CSRF_AUTH_KEY")),
-		// TODO! Fix before deploying to production:
-		csrf.Secure(false),
+	r.Use(
+		middleware.Logger,
+		csrf.Protect(
+			[]byte(os.Getenv("CSRF_AUTH_KEY")),
+			// TODO! Fix before deploying to production:
+			csrf.Secure(false),
+		),
+		userMiddleware.SetUser,
 	)
-	r.Use(csrfMiddleware)
-	r.Use(middleware.Logger)
 
 	// Static routes
 	r.Get("/", controllers.StaticHandler(homeTemplate))
