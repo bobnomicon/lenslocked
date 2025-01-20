@@ -21,6 +21,11 @@ type PostgresConfig struct {
 	SSLMode string
 }
 
+var (
+	flags = flag.NewFlagSet("goose", flag.ExitOnError)
+	dir = flags.String("dir", "migrations", "Directory with migration files")
+)
+
 func (cfg PostgresConfig) String() string {
 	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName, cfg.SSLMode)
 }
@@ -37,10 +42,7 @@ func DefaultPostgresConfig() PostgresConfig {
 	}
 }
 
-func main() {
-	flags := flag.NewFlagSet("goose", flag.ExitOnError)
-	dir := flags.String("dir", "migrations", "Directory with migration files")
-	
+func main() {	
 	// Parse flags
 	flags.Parse(os.Args[1:])
 	args := flags.Args()
