@@ -22,6 +22,7 @@ type UserMiddleware struct {
 }
 
 /******** Middlewares ********/
+
 func (umw UserMiddleware) SetUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, err := readCookie(r, CookieSession)
@@ -48,6 +49,18 @@ func (umw UserMiddleware) SetUser(next http.Handler) http.Handler {
 	})
 }
 
+func (umw UserMiddleware) RequireUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := context.User(r.Context())
+		if user == nil {
+			http.Redirect(w, r, "/signin", http.StatusFound)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 /******** GET handlers ********/
 
 func (u Users) SignUp(w http.ResponseWriter, r *http.Request) {
@@ -68,13 +81,9 @@ func (u Users) SignIn(w http.ResponseWriter, r *http.Request) {
 	u.Templates.SignIn.Execute(w, r, data)
 }
 
+// SetUser, RequireUser middleware required!
 func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	user := context.User(r.Context())
-	if user == nil {
-		http.Redirect(w, r, "/signin", http.StatusFound)
-		return
-	}
-
 	fmt.Fprintf(w, "Current user: %s\n", user.Email)
 }
 

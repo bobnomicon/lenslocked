@@ -49,12 +49,12 @@ func main() {
 	userService := models.UserService{DB: db}
 	sessionService := models.SessionService{DB: db}
 
-	usersController := controllers.Users{
-		UserService: &userService,
+	userMiddleware := controllers.UserMiddleware{
 		SessionService: &sessionService,
 	}
 
-	userMiddleware := controllers.UserMiddleware{
+	usersController := controllers.Users{
+		UserService: &userService,
 		SessionService: &sessionService,
 	}
 
@@ -70,7 +70,7 @@ func main() {
 	// Init router
 	r := chi.NewRouter()
 
-	// Middlewares
+	// Global Middlewares
 	r.Use(
 		middleware.Logger,
 		csrf.Protect(
@@ -92,7 +92,11 @@ func main() {
 	r.Post("/signout", usersController.SignOut)
 	r.Get("/signup", usersController.SignUp)
 	r.Post("/signup", usersController.Create)
-	r.Get("/users/me", usersController.CurrentUser)
+	
+	r.Route("/users/me", func(r chi.Router) {
+		r.Use(userMiddleware.RequireUser)
+		r.Get("/", usersController.CurrentUser)
+	})
 
 	// 404 route
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
