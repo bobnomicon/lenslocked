@@ -1,40 +1,43 @@
 {{ define "header" }}
 <!doctype html>
 <html>
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
-    </head>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+  </head>
 
-    <body class="min-h-screen bg-gray-100">
-        <header class="bg-gradient-to-r from-blue-800 to-indigo-800 text-white">
-            <nav class="px-8 py-6 flex items-center space-x-12">
-                <div class="text-4xl font-serif">Lenslocked</div>
+  <body class="min-h-screen bg-gray-100">
+    <header class="bg-gradient-to-r from-blue-800 to-indigo-800 text-white">
+      <nav class="px-8 py-6 flex items-center space-x-12">
+        <div class="text-4xl font-serif">Lenslocked</div>
 
-                <div class="flex-grow">
-                    <a href="/" class="text-lg font-semibold hover:text-blue-100 pr-8">Home</a>
-                    <a href="/contact" class="text-lg font-semibold hover:text-blue-100 pr-8">Contact</a>
-                    <a href="/faq" class="text-lg font-semibold hover:text-blue-100 pr-8">FAQ</a>
-                </div>
+        <div class="flex-grow">
+          <a href="/" class="text-lg font-semibold hover:text-blue-100 pr-8">Home</a>
+          <a href="/contact" class="text-lg font-semibold hover:text-blue-100 pr-8">Contact</a>
+          <a href="/faq" class="text-lg font-semibold hover:text-blue-100 pr-8">FAQ</a>
+        </div>
 
-                <div class="space-x-4">
-                    <form action="/signout" method="post" class="inline pr-4">
-                        <div class="hidden">
-                            {{ csrfField }}
-                        </div>
-                        <button type="submit">Sign Out</button>
-                    </form>
-                    <a href="/signin" class="pr-4">Sign In</a>
-                    <a href="/signup" class="px-4 py-2 bg-blue-700 hover:bg-blue-600 rounded">Sign Up</a>
-                </div>
-            </nav>
-        </header>
+        <div class="space-x-4">
+          {{ if currentUser }}
+            <form action="/signout" method="post" class="inline pr-4">
+              <div class="hidden">
+                {{ csrfField }}
+              </div>
+              <button type="submit">Sign Out</button>
+            </form>
+          {{ else }}
+            <a href="/signin" class="pr-4">Sign In</a>
+            <a href="/signup" class="px-4 py-2 bg-blue-700 hover:bg-blue-600 rounded">Sign Up</a>
+          {{ end }}
+        </div>
+      </nav>
+    </header>
 {{ end }}
 
 <!-- page content -->
 
 {{ define "footer" }}
-    </body>
+  </body>
 </html>
 {{ end }}
