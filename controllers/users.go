@@ -26,8 +26,13 @@ type UserMiddleware struct {
 func (umw UserMiddleware) SetUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, err := readCookie(r, CookieSession)
-		if err != nil {
-			// Session cookie not set. Proceed with the request without setting user in the context.
+		if err != nil || token == "" {
+			// Session cookie not set or token empty. Proceed with the request without setting user in the context.
+			if err != nil {
+				fmt.Println(err)
+			} else {
+				fmt.Println("Error, empty session token.")
+			}
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -35,6 +40,7 @@ func (umw UserMiddleware) SetUser(next http.Handler) http.Handler {
 		user, err := umw.SessionService.User(token)
 		if err != nil {
 			// Invalid or expired session token. Proceed with the request without setting user in the context.
+			fmt.Println(err)
 			next.ServeHTTP(w, r)
 			return
 		}
