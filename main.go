@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -15,6 +16,15 @@ import (
 	"github.com/operas-logicas/lenslocked/templates"
 	"github.com/operas-logicas/lenslocked/views"
 )
+
+// Get the bool value of the CSRF_SECURE environment variable, default to true if error
+func csrf_secure() bool {
+	csrf_secure, err := strconv.ParseBool(os.Getenv("CSRF_SECURE"))
+	if err != nil {
+		return true
+	}
+	return csrf_secure
+}
 
 func main() {
 	// Load .env
@@ -75,8 +85,7 @@ func main() {
 		middleware.Logger,
 		csrf.Protect(
 			[]byte(os.Getenv("CSRF_AUTH_KEY")),
-			// TODO! Fix before deploying to production:
-			csrf.Secure(false),
+			csrf.Secure(csrf_secure()),
 		),
 		userMiddleware.SetUser,
 	)
