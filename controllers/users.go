@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/operas-logicas/lenslocked/context"
+	"github.com/operas-logicas/lenslocked/email"
 	"github.com/operas-logicas/lenslocked/models"
 )
 
@@ -12,6 +13,7 @@ type Users struct {
 	Templates struct {
 		SignUp Template
 		SignIn Template
+		ForgotPasswordEmail email.Template
 	}
 	UserService *models.UserService
 	SessionService *models.SessionService

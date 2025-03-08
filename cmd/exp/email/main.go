@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/joho/godotenv"
-	"github.com/operas-logicas/lenslocked/models"
+	"github.com/operas-logicas/lenslocked/email"
 )
 
 func main() {
@@ -15,13 +15,14 @@ func main() {
 	}
 
 	// Email service
-	cfg := models.DefaultSMTPConfig()
-	es := models.NewEmailService(cfg)
+	cfg := email.DefaultSMTPConfig()
+	es := email.NewEmailService(cfg)
 	
 	// Send forgot password email
 	if err := es.ForgotPassword(
 		"miller.robert.john@gmail.com",
 		"https://lenslocked/reset-pw?token=abc123",
+		nil,
 	); err != nil {
 		panic(err)
 	}

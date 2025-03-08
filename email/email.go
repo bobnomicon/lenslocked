@@ -1,7 +1,10 @@
-package models
+package email
 
 import (
+	"bytes"
 	"fmt"
+	"html/template"
+	"io/fs"
 	"os"
 	"strconv"
 
@@ -26,6 +29,10 @@ type Email struct {
 	Subject string
 	Plaintext string
 	HTML string
+}
+
+type Template struct {
+	htmlTpl *template.Template
 }
 
 type EmailService struct {
@@ -98,16 +105,61 @@ func (es *EmailService) Send(email Email) error {
 	return nil
 }
 
-func (es *EmailService) ForgotPassword(to, resetURL string) error {
+// Sends forgot password email with optional html template t
+func (es *EmailService) ForgotPassword(to, resetURL string, t *Template) error {
 	email := Email{
 		To: to,
-		Subject: "Reset your password",
+		Subject: "Reset your Lenslocked password",
 		Plaintext: "To reset your password, please visit the following link: " + resetURL,
-		HTML: `<p>To reset your password, please visit the following link: <a href="` + resetURL + `">` + resetURL + `</a></p>`,
 	}
 
+	if t != nil && t.htmlTpl != nil {
+		// Execute email template with data
+		data := map[string]string{
+			"ResetURL": resetURL,
+		}
+
+		htmlBody, err := t.Execute(data)
+		if err != nil {
+			return err
+		}
+
+		email.HTML = htmlBody
+	}
+
+	// Send email
 	if err := es.Send(email); err != nil {
 		return fmt.Errorf("forgot password email: %w", err)
 	}
 	return nil
+}
+
+// Execute email template and write to string
+func (t *Template) Execute(data any) (string, error) {
+	var buf bytes.Buffer
+	err := t.htmlTpl.Execute(&buf, data)
+	if err != nil {
+		return "", fmt.Errorf("executing template: %w", err)
+	}
+
+	return buf.String(), nil
+}
+
+// Parse email template from fs
+func ParseFS(fs fs.FS, pattern ...string) (Template, error) {
+	htmlTpl, err := template.ParseFS(fs, pattern...)
+	if err != nil {
+		return Template{}, fmt.Errorf("parsing template: %w", err)
+	}
+
+	return Template{
+		htmlTpl: htmlTpl,
+	}, nil
+}
+
+func Must(t Template, err error) Template {
+	if err != nil {
+		panic(err)
+	}
+	return t
 }

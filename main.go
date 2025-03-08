@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/joho/godotenv"
 	"github.com/operas-logicas/lenslocked/controllers"
+	"github.com/operas-logicas/lenslocked/email"
 	"github.com/operas-logicas/lenslocked/migrations"
 	"github.com/operas-logicas/lenslocked/models"
 	"github.com/operas-logicas/lenslocked/templates"
@@ -76,6 +77,9 @@ func main() {
 	// Parse users templates
 	usersController.Templates.SignUp = views.Must(views.ParseFS(templates.FS, "signup.gohtml", "layout.gohtml"))
 	usersController.Templates.SignIn = views.Must(views.ParseFS(templates.FS, "signin.gohtml", "layout.gohtml"))
+	usersController.Templates.ForgotPasswordEmail = email.Must(email.ParseFS(templates.FS, "emails/forgot-password.gohtml"))
+
+	fmt.Println("Done parsing templates")
 
 	// Init router
 	r := chi.NewRouter()
