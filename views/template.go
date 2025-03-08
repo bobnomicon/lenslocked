@@ -18,7 +18,7 @@ type Template struct {
 	htmlTpl *template.Template
 }
 
-func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface{}) {
+func (t Template) Execute(w http.ResponseWriter, r *http.Request, data any) {
 	// Clone the template
 	htmlTpl, err := t.htmlTpl.Clone()
 	if err != nil {

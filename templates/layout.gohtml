@@ -38,6 +38,14 @@
 <!-- page content -->
 
 {{ define "footer" }}
+    <footer class="absolute bottom-0 w-full flex justify-center items-center bg-gradient-to-r from-blue-800 to-indigo-800 text-white h-14">
+      <div>&copy; <span id="copyright">2025</span> Lenslocked</div>
+    </footer>
   </body>
+
+  <script>
+    const copyright = document.getElementById('copyright');
+    copyright.innerText = new Date().getFullYear();
+  </script>
 </html>
 {{ end }}
