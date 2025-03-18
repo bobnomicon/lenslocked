@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/operas-logicas/lenslocked/context"
 	"github.com/operas-logicas/lenslocked/email"
@@ -13,10 +14,13 @@ type Users struct {
 	Templates struct {
 		SignUp Template
 		SignIn Template
+		ForgotPassword Template
 		ForgotPasswordEmail email.Template
 	}
 	UserService *models.UserService
 	SessionService *models.SessionService
+	PasswordResetService *models.PasswordResetService
+	EmailService *email.EmailService
 }
 
 type UserMiddleware struct {
@@ -95,6 +99,15 @@ func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Current user: %s\n", user.Email)
 }
 
+func (u Users) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		Email string
+	}
+
+	data.Email = r.FormValue("email")
+	u.Templates.ForgotPassword.Execute(w, r, data)
+}
+
 
 /******** POST handlers ********/
 
@@ -135,7 +148,7 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 func (u Users) Authenticate(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
-		http.Error(w, ".", http.StatusBadRequest)
+		http.Error(w, "Please check required fields and try again.", http.StatusBadRequest)
 	}
 
 	// Authenticate user
@@ -178,4 +191,32 @@ func (u Users) SignOut(w http.ResponseWriter, r *http.Request) {
   // Delete session cookie
   deleteCookie(w, CookieSession)
   http.Redirect(w, r, "/signin", http.StatusFound)
+}
+
+func (u Users) ProcessForgotPassword(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Please enter a valid email.", http.StatusBadRequest)
+		return
+	}
+
+	pwReset, err := u.PasswordResetService.Create(r.PostForm.Get("email"))
+	if err != nil {
+		// TODO: Handle case where a user with that email address doesn't exist.
+		fmt.Println(err)
+		http.Error(w, "Something went wrong!", http.StatusInternalServerError)
+		return
+	}
+
+	var vals url.Values
+	vals.Add("token", pwReset.Token)
+
+	// TODO: Make URL configurable.
+	resetURL := "https://www.lenslocked.com/reset-pw?" + vals.Encode()
+	err = u.EmailService.ForgotPassword(r.PostForm.Get("email"), resetURL, nil)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Something went wrong!", http.StatusInternalServerError)
+		return
+	}
 }

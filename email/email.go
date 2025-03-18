@@ -115,10 +115,11 @@ func (es *EmailService) ForgotPassword(to, resetURL string, t *Template) error {
 
 	if t != nil && t.htmlTpl != nil {
 		// Execute email template with data
-		data := map[string]string{
-			"ResetURL": resetURL,
+		var data struct {
+			ResetURL string
 		}
 
+		data.ResetURL = resetURL
 		htmlBody, err := t.Execute(data)
 		if err != nil {
 			return err
