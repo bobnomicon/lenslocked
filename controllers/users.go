@@ -113,6 +113,15 @@ func (u Users) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	u.Templates.ForgotPassword.Execute(w, r, data)
 }
 
+func (u Users) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		Token string
+	}
+
+	data.Token = r.FormValue("token")
+	u.Templates.ResetPassword.Execute(w, r, data)
+}
+
 
 /******** POST handlers ********/
 
@@ -205,7 +214,12 @@ func (u Users) ProcessForgotPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pwReset, err := u.PasswordResetService.Create(r.PostForm.Get("email"))
+	var data struct {
+		Email string
+	}
+	data.Email = r.PostForm.Get("email")
+
+	passwordReset, err := u.Services.PasswordResetService.Create(data.Email)
 	if err != nil {
 		// TODO: Handle case where a user with that email address doesn't exist.
 		fmt.Println(err)
@@ -213,15 +227,66 @@ func (u Users) ProcessForgotPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var vals url.Values
-	vals.Add("token", pwReset.Token)
+	vals := url.Values{}
+	vals.Set("token", passwordReset.Token)
 
 	// TODO: Make URL configurable.
-	resetURL := "https://www.lenslocked.com/reset-pw?" + vals.Encode()
-	err = u.EmailService.ForgotPassword(r.PostForm.Get("email"), resetURL, nil)
+	resetURL := "https://www.lenslocked.com/reset-password?" + vals.Encode()
+	err = u.Services.EmailService.ForgotPassword(data.Email, resetURL, &u.Templates.ForgotPasswordEmail)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Something went wrong!", http.StatusInternalServerError)
 		return
 	}
+
+	u.Templates.CheckEmail.Execute(w, r, data)
+}
+
+func (u Users) ProcessResetPassword(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Please check required fields and try again.", http.StatusBadRequest)
+		return
+	}
+
+	// Check confirm password and password match
+	if r.PostForm.Get("password_confirm") != r.PostForm.Get("password") {
+		http.Error(w, "Passwords do not match!", http.StatusBadRequest)
+		return
+	}
+
+	var data struct {
+		Token string
+		Password string
+	}
+	data.Token = r.PostForm.Get("token")
+	data.Password = r.PostForm.Get("password")
+
+	user, err := u.Services.PasswordResetService.Consume(data.Token)
+	if err != nil {
+		// TODO: Handle invalid token errors.
+		fmt.Println(err)
+		http.Error(w, "Something went wrong!", http.StatusInternalServerError)
+		return
+	}
+
+	// Update user's password
+	err = u.Services.UserService.UpdatePassword(user.ID, data.Password)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Something went wrong!", http.StatusInternalServerError)
+		return
+	}
+
+	// Sign user in now that they have reset their password by creating a new session for user
+	session, err := u.Services.SessionService.Create(user.ID)
+	if err != nil {
+		fmt.Println(err)
+		http.Redirect(w, r, "/signin", http.StatusFound)
+		return
+	}
+
+	// Set cookie with session token
+  setCookie(w, CookieSession, session.Token)
+	http.Redirect(w, r, "/users/me", http.StatusFound)
 }
