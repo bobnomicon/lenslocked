@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	CookieSession = "session"
+	CookieSession string = "session"
 )
 
 func newCookie(name, value string) *http.Cookie {

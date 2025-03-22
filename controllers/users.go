@@ -15,12 +15,17 @@ type Users struct {
 		SignUp Template
 		SignIn Template
 		ForgotPassword Template
+		CheckEmail Template
+		ResetPassword Template
 		ForgotPasswordEmail email.Template
 	}
-	UserService *models.UserService
-	SessionService *models.SessionService
-	PasswordResetService *models.PasswordResetService
-	EmailService *email.EmailService
+
+	Services struct {
+		UserService *models.UserService
+		SessionService *models.SessionService
+		PasswordResetService *models.PasswordResetService
+		EmailService *email.EmailService
+	}
 }
 
 type UserMiddleware struct {
@@ -125,7 +130,7 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create user
-	user, err := u.UserService.Create(r.PostForm.Get("email"), r.PostForm.Get("password"))
+	user, err := u.Services.UserService.Create(r.PostForm.Get("email"), r.PostForm.Get("password"))
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Please enter a valid email and password.", http.StatusInternalServerError)
@@ -133,7 +138,7 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// User successfully created, so create new session for user
-	session, err := u.SessionService.Create(user.ID)
+	session, err := u.Services.SessionService.Create(user.ID)
 	if err != nil {
 		fmt.Println(err)
 		http.Redirect(w, r, "/signin", http.StatusFound)
@@ -152,7 +157,7 @@ func (u Users) Authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Authenticate user
-	user, err := u.UserService.Authenticate(r.PostForm.Get("email"), r.PostForm.Get("password"))
+	user, err := u.Services.UserService.Authenticate(r.PostForm.Get("email"), r.PostForm.Get("password"))
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Invalid credentials!", http.StatusUnauthorized)
@@ -160,7 +165,7 @@ func (u Users) Authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// User successfully authenticated, so create new session for user
-	session, err := u.SessionService.Create(user.ID)
+	session, err := u.Services.SessionService.Create(user.ID)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Something went wrong!", http.StatusInternalServerError)
@@ -181,7 +186,7 @@ func (u Users) SignOut(w http.ResponseWriter, r *http.Request) {
   }
 
   // Delete user's session
-  err = u.SessionService.Delete(token)
+  err = u.Services.SessionService.Delete(token)
   if err != nil {
     fmt.Println(err)
     http.Error(w, "Something went wrong!", http.StatusInternalServerError)

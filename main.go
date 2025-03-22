@@ -18,55 +18,81 @@ import (
 	"github.com/operas-logicas/lenslocked/views"
 )
 
-// Get the bool value of the CSRF_SECURE environment variable, default to true if error
-func csrf_secure() bool {
-	csrf_secure, err := strconv.ParseBool(os.Getenv("CSRF_SECURE"))
-	if err != nil {
-		return true
+type config struct {
+	PSQL models.PostgresConfig
+	SMTP email.SMTPConfig
+	CSRF struct {
+		Key string
+		Secure bool
 	}
-	return csrf_secure
+	Server struct {
+		Address string
+	}
+}
+
+func loadEnvConfig() (config, error) {
+	var cfg config
+
+	// Load .env
+	if err := godotenv.Load(); err != nil {
+		return cfg, err
+	}
+
+	// Get the bool value of the CSRF_SECURE environment variable, default to true if error
+	csrfSecure, err := strconv.ParseBool(os.Getenv("CSRF_SECURE"))
+	if err != nil {
+		csrfSecure = true
+	}
+
+	// Set config
+	cfg.PSQL = models.DefaultPostgresConfig()
+	cfg.SMTP = email.DefaultSMTPConfig()
+	cfg.CSRF.Key = os.Getenv("CSRF_AUTH_KEY")
+	cfg.CSRF.Secure = csrfSecure
+	cfg.Server.Address = os.Getenv("SERVER_ADDRESS")
+
+	return cfg, nil
 }
 
 func main() {
-	// Load .env
-	err := godotenv.Load()
+	// Load env config
+	cfg, err := loadEnvConfig()
 	if err != nil {
 		panic(err)
 	}
-	
-	// Open DB connection
-	cfg := models.DefaultPostgresConfig()
-	// fmt.Println(cfg.String())
-	db, err := models.Open(cfg)
+
+	// Open DB connection	
+	db, err := models.Open(cfg.PSQL)
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
 
 	// Verify DB connection
-	err = db.Ping()
-	if err != nil {
+	if err = db.Ping(); err != nil {
 		panic(err)
 	}
 	fmt.Println("Database connected")
 
 	// Run migrations
-	err = models.MigrateFS(db, migrations.FS, ".")
-	if err != nil {
+	if err = models.MigrateFS(db, migrations.FS, "."); err != nil {
 		panic(err)
 	}
 
 	// Init services
-	userService := models.UserService{DB: db}
-	sessionService := models.SessionService{DB: db}
+	userService := &models.UserService{DB: db}
+	sessionService := &models.SessionService{DB: db}
+	passwordResetService := &models.PasswordResetService{DB: db}
+	emailService := email.NewEmailService(cfg.SMTP)
+
+	var usersController controllers.Users
+	usersController.Services.UserService = userService
+	usersController.Services.SessionService = sessionService
+	usersController.Services.PasswordResetService = passwordResetService
+	usersController.Services.EmailService = emailService
 
 	userMiddleware := controllers.UserMiddleware{
-		SessionService: &sessionService,
-	}
-
-	usersController := controllers.Users{
-		UserService: &userService,
-		SessionService: &sessionService,
+		SessionService: sessionService,
 	}
 
 	// Parse static templates
@@ -77,6 +103,9 @@ func main() {
 	// Parse users templates
 	usersController.Templates.SignUp = views.Must(views.ParseFS(templates.FS, "signup.gohtml", "layout.gohtml"))
 	usersController.Templates.SignIn = views.Must(views.ParseFS(templates.FS, "signin.gohtml", "layout.gohtml"))
+	usersController.Templates.ForgotPassword = views.Must(views.ParseFS(templates.FS, "forgot-password.gohtml", "layout.gohtml"))
+	usersController.Templates.CheckEmail = views.Must(views.ParseFS(templates.FS, "check-email.gohtml", "layout.gohtml"))
+	usersController.Templates.ResetPassword = views.Must(views.ParseFS(templates.FS, "reset-password.gohtml", "layout.gohtml"))
 	usersController.Templates.ForgotPasswordEmail = email.Must(email.ParseFS(templates.FS, "emails/forgot-password.gohtml"))
 
 	fmt.Println("Done parsing templates")
@@ -88,8 +117,8 @@ func main() {
 	r.Use(
 		middleware.Logger,
 		csrf.Protect(
-			[]byte(os.Getenv("CSRF_AUTH_KEY")),
-			csrf.Secure(csrf_secure()),
+			[]byte(cfg.CSRF.Key),
+			csrf.Secure(cfg.CSRF.Secure),
 		),
 		userMiddleware.SetUser,
 	)
@@ -100,6 +129,10 @@ func main() {
 	r.Get("/faq", controllers.FAQ(faqTemplate))
 
 	// Users routes
+	r.Get("/forgot-password", usersController.ForgotPassword)
+	r.Post("/forgot-password", usersController.ProcessForgotPassword)
+	r.Get("/reset-password", usersController.ResetPassword)
+	r.Post("/reset-password", usersController.ProcessResetPassword)
 	r.Get("/signin", usersController.SignIn)
 	r.Post("/signin", usersController.Authenticate)
 	r.Post("/signout", usersController.SignOut)
@@ -117,6 +150,8 @@ func main() {
 	})
 
 	// Start HTTP server and listen on port 3000
-	fmt.Println("Starting the server on :3000...")
-	http.ListenAndServe("localhost:3000", r)
+	fmt.Printf("Starting the server on %s...\n", cfg.Server.Address)
+	if err = http.ListenAndServe(cfg.Server.Address, r); err != nil {
+		panic(err)
+	}
 }
