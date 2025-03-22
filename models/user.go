@@ -45,10 +45,30 @@ func (us *UserService) Create(email, password string) (*User, error) {
 	return &user, nil
 }
 
+func (us *UserService) UpdatePassword(userID int, password string) error {
+	// Hash password using bcrypt
+	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("update password: %w", err)
+	}
+	passwordHash := string(hashedBytes)
+
+	_, err = us.DB.Exec(`
+		UPDATE users
+		SET password_hash = $2
+		WHERE id = $1
+	`, userID, passwordHash)
+	if err != nil {
+		return fmt.Errorf("update password: %w", err)
+	}
+
+	return nil
+}
+
 func (us *UserService) Authenticate(email, password string) (*User, error) {
 	email = strings.ToLower(email)
 
-	user := User{}
+	var user User
 
 	row := us.DB.QueryRow(`
 		SELECT id, email, password_hash
