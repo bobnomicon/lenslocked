@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 
 	"github.com/operas-logicas/lenslocked/context"
 	"github.com/operas-logicas/lenslocked/email"
@@ -230,8 +231,7 @@ func (u Users) ProcessForgotPassword(w http.ResponseWriter, r *http.Request) {
 	vals := url.Values{}
 	vals.Set("token", passwordReset.Token)
 
-	// TODO: Make URL configurable.
-	resetURL := "https://www.lenslocked.com/reset-password?" + vals.Encode()
+	resetURL := os.Getenv("APP_URL") +  "/reset-password?" + vals.Encode()
 	err = u.Services.EmailService.ForgotPassword(data.Email, resetURL, &u.Templates.ForgotPasswordEmail)
 	if err != nil {
 		fmt.Println(err)

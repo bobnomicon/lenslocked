@@ -26,7 +26,12 @@ type config struct {
 		Secure bool
 	}
 	Server struct {
+		Protocol string
 		Address string
+		Port string
+	}
+	App struct {
+		Url string
 	}
 }
 
@@ -50,6 +55,8 @@ func loadEnvConfig() (config, error) {
 	cfg.CSRF.Key = os.Getenv("CSRF_AUTH_KEY")
 	cfg.CSRF.Secure = csrfSecure
 	cfg.Server.Address = os.Getenv("SERVER_ADDRESS")
+	cfg.Server.Port = os.Getenv("SERVER_PORT")
+	cfg.App.Url = os.Getenv("APP_URL")
 
 	return cfg, nil
 }
@@ -149,9 +156,10 @@ func main() {
 		http.Error(w, "Page not found", http.StatusNotFound)
 	})
 
-	// Start HTTP server and listen on port 3000
-	fmt.Printf("Starting the server on %s...\n", cfg.Server.Address)
-	if err = http.ListenAndServe(cfg.Server.Address, r); err != nil {
+	// Start HTTP server and listen on specified port
+	fmt.Printf("Starting the server on port %s...\n", cfg.Server.Port)
+	addr := cfg.Server.Address + ":" + cfg.Server.Port
+	if err = http.ListenAndServe(addr, r); err != nil {
 		panic(err)
 	}
 }

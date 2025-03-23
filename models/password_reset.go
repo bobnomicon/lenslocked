@@ -37,6 +37,18 @@ func (prs *PasswordResetService) hash(token string) string {
 	return base64.URLEncoding.EncodeToString(tokenHash[:])
 }
 
+func (prs *PasswordResetService) delete(id int) error {
+	_, err := prs.DB.Exec(`
+		DELETE FROM password_resets
+		WHERE id = $1
+	`, id)
+	if err != nil {
+		return fmt.Errorf("delete: %w", err)
+	}
+
+	return nil
+}
+
 // Creates a new password reset token for the provided user. The token will be returned in the Token field of the PasswordReset type, but only the hashed token will be stored in the db.
 func (prs *PasswordResetService) Create(email string) (*PasswordReset, error) {
 	email = strings.ToLower(email)
@@ -95,7 +107,45 @@ func (prs *PasswordResetService) Create(email string) (*PasswordReset, error) {
 }
 
 func (prs *PasswordResetService) Consume(token string) (*User, error) {
-	// TODO!
+	// Hash password reset token
+	tokenHash := prs.hash(token)
 
-	return nil, fmt.Errorf("TODO! Implement PasswordResetService.Consume")
+	var user User
+	var passwordReset PasswordReset
+
+	// Query db for user with password reset token hash
+	row := prs.DB.QueryRow(`
+		SELECT
+			users.id,
+			users.email,
+			users.password_hash,
+			password_resets.id,
+			password_resets.expires_at
+		FROM users
+			JOIN password_resets ON password_resets.user_id = users.id
+		WHERE password_resets.token_hash = $1
+	`, tokenHash)
+	err := row.Scan(
+		&user.ID,
+		&user.Email,
+		&user.PasswordHash,
+		&passwordReset.ID,
+		&passwordReset.ExpiresAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("token invalid: %w", err)
+	}
+
+	// Check token is still valid (not expired)
+	if time.Now().After(passwordReset.ExpiresAt) {
+		return nil, fmt.Errorf("token expired: %w", err)
+	}
+
+	// Password reset token is valid, so delete it from db
+	err = prs.delete(passwordReset.ID)
+	if err != nil {
+		return nil, fmt.Errorf("consume: %w", err)
+	}
+
+	return &user, nil
 }

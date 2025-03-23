@@ -73,7 +73,7 @@ func (ss *SessionService) User(token string) (*User, error) {
 	// Hash session token
 	tokenHash := ss.hash(token)
 
-	// Query db for session with token hash
+	// Query db for user with session token hash
 	var user User
 	row := ss.DB.QueryRow(`
 		SELECT
