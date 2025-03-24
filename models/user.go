@@ -2,11 +2,16 @@ package models
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var ErrEmailTaken = errors.New("models: email address is already in use")
 
 type User struct {
 	ID int
@@ -24,6 +29,15 @@ func (us *UserService) Create(email, password string) (*User, error) {
 	// Hash password using bcrypt
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
+		var pgError *pgconn.PgError
+		
+		if errors.As(err, &pgError) {
+			if pgError.Code == pgerrcode.UniqueViolation {
+				// Email already taken
+				return nil, ErrEmailTaken
+			}
+		}
+
 		return nil, fmt.Errorf("create user: %w", err)
 	}
 	passwordHash := string(hashedBytes)

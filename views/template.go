@@ -18,7 +18,7 @@ type Template struct {
 	htmlTpl *template.Template
 }
 
-func (t Template) Execute(w http.ResponseWriter, r *http.Request, data any) {
+func (t Template) Execute(w http.ResponseWriter, r *http.Request, data any, errs ...error) {
 	// Clone the template
 	htmlTpl, err := t.htmlTpl.Clone()
 	if err != nil {
@@ -27,14 +27,22 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data any) {
 		return
 	}
 
-	// Replace csrfField func with gorilla/csrf one
 	htmlTpl = htmlTpl.Funcs(
 		template.FuncMap{
+			// Replace csrfField func with gorilla/csrf one
 			"csrfField": func() template.HTML {
 				return csrf.TemplateField(r)
 			},
 			"currentUser": func() *models.User {
 				return context.User(r.Context())
+			},
+			// TODO! Fix this:
+			"errors": func() []string {
+				var errorMessages []string
+				for _, err := range errs {
+					errorMessages = append(errorMessages, err.Error())
+				}
+				return errorMessages
 			},
 		},
 	)
@@ -67,6 +75,9 @@ func ParseFS(fs fs.FS, pattern ...string) (Template, error) {
 			},
 			"currentUser": func() (*models.User, error) {
 				return nil, fmt.Errorf("currentUser not implemented")
+			},
+			"errors": func() []string {
+				return nil
 			},
 		},
 	)

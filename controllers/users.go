@@ -133,17 +133,25 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var data struct {
+		Email string
+		Password string
+		ConfirmPassword string
+	}
+	data.Email = r.PostForm.Get("email")
+	data.Password = r.PostForm.Get("password")
+	data.ConfirmPassword = r.PostForm.Get("confirm_password")
+
 	// Check confirm password and password match
-	if r.PostForm.Get("password_confirm") != r.PostForm.Get("password") {
-		http.Error(w, "Passwords do not match!", http.StatusBadRequest)
+	if data.ConfirmPassword != data.Password {
+		u.Templates.SignUp.Execute(w, r, data, err)
 		return
 	}
 
 	// Create user
-	user, err := u.Services.UserService.Create(r.PostForm.Get("email"), r.PostForm.Get("password"))
+	user, err := u.Services.UserService.Create(data.Email, data.Password)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Please enter a valid email and password.", http.StatusInternalServerError)
+		u.Templates.SignUp.Execute(w, r, data, err)
 		return
 	}
 
@@ -250,7 +258,7 @@ func (u Users) ProcessResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check confirm password and password match
-	if r.PostForm.Get("password_confirm") != r.PostForm.Get("password") {
+	if r.PostForm.Get("confirm_password") != r.PostForm.Get("password") {
 		http.Error(w, "Passwords do not match!", http.StatusBadRequest)
 		return
 	}
