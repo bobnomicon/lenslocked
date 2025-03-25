@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -8,7 +9,12 @@ import (
 
 	"github.com/operas-logicas/lenslocked/context"
 	"github.com/operas-logicas/lenslocked/email"
+	apperrors "github.com/operas-logicas/lenslocked/errors"
 	"github.com/operas-logicas/lenslocked/models"
+)
+
+var (
+	ErrPasswordsDontMatch = errors.New("controllers: password and confirm password don't match")
 )
 
 type Users struct {
@@ -144,13 +150,17 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 
 	// Check confirm password and password match
 	if data.ConfirmPassword != data.Password {
-		u.Templates.SignUp.Execute(w, r, data, err)
+		u.Templates.SignUp.Execute(w, r, data, apperrors.Public(ErrPasswordsDontMatch, "Password and confirm password do not match."))
 		return
 	}
 
 	// Create user
 	user, err := u.Services.UserService.Create(data.Email, data.Password)
 	if err != nil {
+		if errors.Is(err, models.ErrEmailTaken) {
+			err = apperrors.Public(err, "Email address is already associated with an account.")
+		}
+
 		u.Templates.SignUp.Execute(w, r, data, err)
 		return
 	}

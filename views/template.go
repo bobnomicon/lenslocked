@@ -2,6 +2,7 @@ package views
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -18,6 +19,27 @@ type Template struct {
 	htmlTpl *template.Template
 }
 
+type public interface {
+	Public() string
+}
+
+func getErrMessages(errs ...error) []string {
+	var msgs []string
+
+	for _, err := range errs {
+		var pubErr public
+
+		if errors.As(err, &pubErr) {
+			msgs = append(msgs, pubErr.Public())
+		} else {
+			fmt.Println(err)
+			msgs = append(msgs, "Something went wrong.")
+		}
+	}
+
+	return msgs
+}
+
 func (t Template) Execute(w http.ResponseWriter, r *http.Request, data any, errs ...error) {
 	// Clone the template
 	htmlTpl, err := t.htmlTpl.Clone()
@@ -27,22 +49,20 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data any, errs
 		return
 	}
 
+	// Get error messages if any
+	errMsgs := getErrMessages(errs...)
+
+	// Replace placholder funcs
 	htmlTpl = htmlTpl.Funcs(
 		template.FuncMap{
-			// Replace csrfField func with gorilla/csrf one
 			"csrfField": func() template.HTML {
 				return csrf.TemplateField(r)
 			},
 			"currentUser": func() *models.User {
 				return context.User(r.Context())
 			},
-			// TODO! Fix this:
 			"errors": func() []string {
-				var errorMessages []string
-				for _, err := range errs {
-					errorMessages = append(errorMessages, err.Error())
-				}
-				return errorMessages
+				return errMsgs
 			},
 		},
 	)
@@ -66,8 +86,9 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data any, errs
 }
 
 func ParseFS(fs fs.FS, pattern ...string) (Template, error) {
-	// Add csrfField placeholder func to template before parsing
 	htmlTpl := template.New(pattern[0])
+
+	// Placeholder funcs
 	htmlTpl = htmlTpl.Funcs(
 		template.FuncMap{
 			"csrfField": func() (template.HTML, error) {
