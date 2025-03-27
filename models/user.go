@@ -31,15 +31,6 @@ func (us *UserService) Create(email, password string) (*User, error) {
 	// Hash password using bcrypt
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		var pgError *pgconn.PgError
-		
-		if errors.As(err, &pgError) {
-			if pgError.Code == pgerrcode.UniqueViolation {
-				// Email already taken
-				return nil, ErrEmailTaken
-			}
-		}
-
 		return nil, fmt.Errorf("create user: %w", err)
 	}
 	passwordHash := string(hashedBytes)
@@ -55,6 +46,15 @@ func (us *UserService) Create(email, password string) (*User, error) {
 	`, email, passwordHash)
 	err = row.Scan(&user.ID)
 	if err != nil {
+		var pgError *pgconn.PgError
+
+		if errors.As(err, &pgError) {
+			if pgError.Code == pgerrcode.UniqueViolation {
+				// Email already taken
+				return nil, ErrEmailTaken
+			}
+		}
+
 		return nil, fmt.Errorf("create user: %w", err)
 	}
 
