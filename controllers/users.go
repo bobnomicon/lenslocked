@@ -171,9 +171,10 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, models.ErrEmailTaken) {
 			w.WriteHeader(apperrors.DefaultStatusCode)
 			err = apperrors.Public(err, "Email address is already associated with an account.")
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
 		}
 
-		w.WriteHeader(http.StatusInternalServerError)
 		u.Templates.SignUp.Execute(w, r, data, err)
 		return
 	}
