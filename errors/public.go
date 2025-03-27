@@ -1,5 +1,12 @@
 package errors
 
+import "net/http"
+
+const (
+	// Default status code for public errors
+	DefaultStatusCode int = http.StatusBadRequest
+)
+
 type publicError struct {
 	err error
 	msg string

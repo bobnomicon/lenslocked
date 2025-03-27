@@ -14,6 +14,7 @@ import (
 )
 
 var (
+	ErrMissingRequiredFields = errors.New("controllers: missing required fields")
 	ErrPasswordsDontMatch = errors.New("controllers: password and confirm password don't match")
 )
 
@@ -133,23 +134,33 @@ func (u Users) ResetPassword(w http.ResponseWriter, r *http.Request) {
 /******** POST handlers ********/
 
 func (u Users) Create(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
-	if err != nil {
-		http.Error(w, "Please check required fields and try again.", http.StatusBadRequest)
-		return
-	}
-
 	var data struct {
 		Email string
 		Password string
 		ConfirmPassword string
 	}
+
+	err := r.ParseForm()
+	if err != nil {
+		u.Templates.SignUp.Execute(w, r, data, err)
+		return
+	}
+
 	data.Email = r.PostForm.Get("email")
 	data.Password = r.PostForm.Get("password")
 	data.ConfirmPassword = r.PostForm.Get("confirm_password")
 
+	// Check required fields
+	if data.Email == "" || data.Password == "" || data.ConfirmPassword == "" {
+		err = apperrors.Public(ErrMissingRequiredFields, "Please check required fields and try again.")
+		w.WriteHeader(apperrors.DefaultStatusCode)
+		u.Templates.SignUp.Execute(w, r, data, err)
+		return
+	}
+
 	// Check confirm password and password match
 	if data.ConfirmPassword != data.Password {
+		w.WriteHeader(apperrors.DefaultStatusCode)
 		u.Templates.SignUp.Execute(w, r, data, apperrors.Public(ErrPasswordsDontMatch, "Password and confirm password do not match."))
 		return
 	}
@@ -158,9 +169,11 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	user, err := u.Services.UserService.Create(data.Email, data.Password)
 	if err != nil {
 		if errors.Is(err, models.ErrEmailTaken) {
+			w.WriteHeader(apperrors.DefaultStatusCode)
 			err = apperrors.Public(err, "Email address is already associated with an account.")
 		}
 
+		w.WriteHeader(http.StatusInternalServerError)
 		u.Templates.SignUp.Execute(w, r, data, err)
 		return
 	}
