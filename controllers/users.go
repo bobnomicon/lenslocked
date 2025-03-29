@@ -142,6 +142,7 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 
 	err := r.ParseForm()
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		u.Templates.SignUp.Execute(w, r, data, err)
 		return
 	}
@@ -153,15 +154,16 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	// Check required fields
 	if data.Email == "" || data.Password == "" || data.ConfirmPassword == "" {
 		err = apperrors.Public(ErrMissingRequiredFields, "Please check required fields and try again.")
-		w.WriteHeader(apperrors.DefaultStatusCode)
+		w.WriteHeader(http.StatusBadRequest)
 		u.Templates.SignUp.Execute(w, r, data, err)
 		return
 	}
 
 	// Check confirm password and password match
 	if data.ConfirmPassword != data.Password {
-		w.WriteHeader(apperrors.DefaultStatusCode)
-		u.Templates.SignUp.Execute(w, r, data, apperrors.Public(ErrPasswordsDontMatch, "Password and confirm password do not match."))
+		w.WriteHeader(http.StatusBadRequest)
+		err = apperrors.Public(ErrPasswordsDontMatch, "Password and confirm password do not match.")
+		u.Templates.SignUp.Execute(w, r, data, err)
 		return
 	}
 
@@ -169,7 +171,7 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	user, err := u.Services.UserService.Create(data.Email, data.Password)
 	if err != nil {
 		if errors.Is(err, models.ErrEmailTaken) {
-			w.WriteHeader(apperrors.DefaultStatusCode)
+			w.WriteHeader(http.StatusBadRequest)
 			err = apperrors.Public(err, "Email address is already associated with an account.")
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -193,24 +195,47 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u Users) Authenticate(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		Email string
+		Password string
+	}
+
 	err := r.ParseForm()
 	if err != nil {
-		http.Error(w, "Please check required fields and try again.", http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
+		u.Templates.SignIn.Execute(w, r, data, err)
+	}
+
+	data.Email = r.PostForm.Get("email")
+	data.Password = r.PostForm.Get("password")
+
+	// Check required fields
+	if data.Email == "" || data.Password == "" {
+		err = apperrors.Public(ErrMissingRequiredFields, "Please check required fields and try again.")
+		w.WriteHeader(http.StatusBadRequest)
+		u.Templates.SignIn.Execute(w, r, data, err)
+		return
 	}
 
 	// Authenticate user
-	user, err := u.Services.UserService.Authenticate(r.PostForm.Get("email"), r.PostForm.Get("password"))
+	user, err := u.Services.UserService.Authenticate(data.Email, data.Password)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Invalid credentials!", http.StatusUnauthorized)
+		if errors.Is(err, models.ErrInvalidCredentials) {
+			w.WriteHeader(http.StatusUnauthorized)
+			err = apperrors.Public(err, "Please enter a valid email and password.")
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		
+		u.Templates.SignIn.Execute(w, r, data, err)
 		return
 	}
 
 	// User successfully authenticated, so create new session for user
 	session, err := u.Services.SessionService.Create(user.ID)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Something went wrong!", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		u.Templates.SignIn.Execute(w, r, data, err)
 		return
 	}
 
@@ -231,8 +256,7 @@ func (u Users) SignOut(w http.ResponseWriter, r *http.Request) {
   err = u.Services.SessionService.Delete(token)
   if err != nil {
     fmt.Println(err)
-    http.Error(w, "Something went wrong!", http.StatusInternalServerError)
-    return
+		// Don't return (delete the cookie and redirect to sign in page)
   }
 
   // Delete session cookie
@@ -241,22 +265,37 @@ func (u Users) SignOut(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u Users) ProcessForgotPassword(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
-	if err != nil {
-		http.Error(w, "Please enter a valid email.", http.StatusBadRequest)
-		return
-	}
-
 	var data struct {
 		Email string
 	}
+
+	err := r.ParseForm()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		u.Templates.ForgotPassword.Execute(w, r, data, err)
+		return
+	}
+
 	data.Email = r.PostForm.Get("email")
+
+	// Check required fields
+	if data.Email == "" {
+		err = apperrors.Public(ErrMissingRequiredFields, "Please a enter a valid email.")
+		w.WriteHeader(http.StatusBadRequest)
+		u.Templates.ForgotPassword.Execute(w, r, data, err)
+		return
+	}
 
 	passwordReset, err := u.Services.PasswordResetService.Create(data.Email)
 	if err != nil {
-		// TODO: Handle case where a user with that email address doesn't exist.
-		fmt.Println(err)
-		http.Error(w, "Something went wrong!", http.StatusInternalServerError)
+		if errors.Is(err, models.ErrEmailDoesNotExist) {
+			w.WriteHeader(http.StatusBadRequest)
+			err = apperrors.Public(err, "An account with that email address does not exist.")
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		
+		u.Templates.ForgotPassword.Execute(w, r, data, err)
 		return
 	}
 
@@ -266,8 +305,8 @@ func (u Users) ProcessForgotPassword(w http.ResponseWriter, r *http.Request) {
 	resetURL := os.Getenv("APP_URL") +  "/reset-password?" + vals.Encode()
 	err = u.Services.EmailService.ForgotPassword(data.Email, resetURL, &u.Templates.ForgotPasswordEmail)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Something went wrong!", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		u.Templates.ForgotPassword.Execute(w, r, data, err)
 		return
 	}
 
@@ -275,38 +314,60 @@ func (u Users) ProcessForgotPassword(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u Users) ProcessResetPassword(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		Token string
+		Password string
+		ConfirmPassword string
+	}
+
 	err := r.ParseForm()
 	if err != nil {
-		http.Error(w, "Please check required fields and try again.", http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
+		u.Templates.ResetPassword.Execute(w, r, data, err)
+		return
+	}
+
+	data.Token = r.PostForm.Get("token")
+	data.Password = r.PostForm.Get("password")
+	data.ConfirmPassword = r.PostForm.Get("confirm_password")
+
+	// Check required fields
+	if data.Password == "" || data.ConfirmPassword == "" {
+		err = apperrors.Public(ErrMissingRequiredFields, "Please check required fields and try again.")
+		w.WriteHeader(http.StatusBadRequest)
+		u.Templates.ResetPassword.Execute(w, r, data, err)
 		return
 	}
 
 	// Check confirm password and password match
-	if r.PostForm.Get("confirm_password") != r.PostForm.Get("password") {
-		http.Error(w, "Passwords do not match!", http.StatusBadRequest)
+	if data.ConfirmPassword != data.Password {
+		w.WriteHeader(http.StatusBadRequest)
+		err = apperrors.Public(ErrPasswordsDontMatch, "Password and confirm password do not match.")
+		u.Templates.ResetPassword.Execute(w, r, data, err)
 		return
 	}
 
-	var data struct {
-		Token string
-		Password string
-	}
-	data.Token = r.PostForm.Get("token")
-	data.Password = r.PostForm.Get("password")
-
 	user, err := u.Services.PasswordResetService.Consume(data.Token)
 	if err != nil {
-		// TODO: Handle invalid token errors.
-		fmt.Println(err)
-		http.Error(w, "Something went wrong!", http.StatusInternalServerError)
+		if errors.Is(err, models.ErrTokenInvalid) {
+			w.WriteHeader(http.StatusBadRequest)
+			err = apperrors.Public(err, "Password reset token is invalid.")
+		} else if errors.Is(err, models.ErrTokenExpired) {
+			w.WriteHeader(http.StatusBadRequest)
+			err = apperrors.Public(err, "Password reset token has expired.")
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		u.Templates.ResetPassword.Execute(w, r, data, err)
 		return
 	}
 
 	// Update user's password
 	err = u.Services.UserService.UpdatePassword(user.ID, data.Password)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Something went wrong!", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		u.Templates.ResetPassword.Execute(w, r, data, err)
 		return
 	}
 

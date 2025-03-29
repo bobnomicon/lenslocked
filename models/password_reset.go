@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -14,6 +15,12 @@ import (
 const (
 	// The default time that a password reset token is valid for.
 	DefaultResetDuration = 1 * time.Hour
+)
+
+var (
+	ErrEmailDoesNotExist = errors.New("models: email does not exist")
+	ErrTokenInvalid = errors.New("models: password reset token does not exist")
+	ErrTokenExpired = errors.New("modles: password reset token expired")
 )
 
 type PasswordReset struct {
@@ -61,6 +68,11 @@ func (prs *PasswordResetService) Create(email string) (*PasswordReset, error) {
 	`, email)
 	err := row.Scan(&userID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+				// Email does not exist
+				return nil, ErrEmailDoesNotExist
+		}
+
 		return nil, fmt.Errorf("create password reset: %w", err)
 	}
 
@@ -133,12 +145,17 @@ func (prs *PasswordResetService) Consume(token string) (*User, error) {
 		&passwordReset.ExpiresAt,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("token invalid: %w", err)
+		if errors.Is(err, sql.ErrNoRows) {
+			// Token does not exist (invalid token)
+			return nil, ErrTokenInvalid
+		}
+
+		return nil, fmt.Errorf("consume: %w", err)
 	}
 
 	// Check token is still valid (not expired)
 	if time.Now().After(passwordReset.ExpiresAt) {
-		return nil, fmt.Errorf("token expired: %w", err)
+		return nil, ErrTokenExpired
 	}
 
 	// Password reset token is valid, so delete it from db
