@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/operas-logicas/lenslocked/rand"
+	"github.com/bobnomicon/lenslocked/rand"
 )
 
 const (

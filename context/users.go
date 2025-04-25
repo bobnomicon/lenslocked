@@ -3,7 +3,7 @@ package context
 import (
 	"context"
 
-	"github.com/operas-logicas/lenslocked/models"
+	"github.com/bobnomicon/lenslocked/models"
 )
 
 type key string

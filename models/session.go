@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/operas-logicas/lenslocked/rand"
+	"github.com/bobnomicon/lenslocked/rand"
 )
 
 const (

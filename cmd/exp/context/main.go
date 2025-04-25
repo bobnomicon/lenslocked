@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"strings"
 
-	customCtx "github.com/operas-logicas/lenslocked/context"
-	"github.com/operas-logicas/lenslocked/models"
+	customCtx "github.com/bobnomicon/lenslocked/context"
+	"github.com/bobnomicon/lenslocked/models"
 )
 
 type ctxKey string

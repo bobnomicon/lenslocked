@@ -1,4 +1,4 @@
-module github.com/operas-logicas/lenslocked
+module github.com/bobnomicon/lenslocked
 
 go 1.23.2
 
