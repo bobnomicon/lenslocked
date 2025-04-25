@@ -10,9 +10,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/bobnomicon/lenslocked/context"
+	"github.com/bobnomicon/lenslocked/models"
 	"github.com/gorilla/csrf"
-	"github.com/operas-logicas/lenslocked/context"
-	"github.com/operas-logicas/lenslocked/models"
 )
 
 type Template struct {

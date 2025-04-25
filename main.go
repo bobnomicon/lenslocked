@@ -6,16 +6,16 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/bobnomicon/lenslocked/controllers"
+	"github.com/bobnomicon/lenslocked/email"
+	"github.com/bobnomicon/lenslocked/migrations"
+	"github.com/bobnomicon/lenslocked/models"
+	"github.com/bobnomicon/lenslocked/templates"
+	"github.com/bobnomicon/lenslocked/views"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/gorilla/csrf"
 	"github.com/joho/godotenv"
-	"github.com/operas-logicas/lenslocked/controllers"
-	"github.com/operas-logicas/lenslocked/email"
-	"github.com/operas-logicas/lenslocked/migrations"
-	"github.com/operas-logicas/lenslocked/models"
-	"github.com/operas-logicas/lenslocked/templates"
-	"github.com/operas-logicas/lenslocked/views"
 )
 
 type config struct {

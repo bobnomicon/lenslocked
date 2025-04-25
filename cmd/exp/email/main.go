@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
+	"github.com/bobnomicon/lenslocked/email"
 	"github.com/joho/godotenv"
-	"github.com/operas-logicas/lenslocked/email"
 )
 
 func main() {

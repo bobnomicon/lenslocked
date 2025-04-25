@@ -7,10 +7,10 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/operas-logicas/lenslocked/context"
-	"github.com/operas-logicas/lenslocked/email"
-	apperrors "github.com/operas-logicas/lenslocked/errors"
-	"github.com/operas-logicas/lenslocked/models"
+	"github.com/bobnomicon/lenslocked/context"
+	"github.com/bobnomicon/lenslocked/email"
+	apperrors "github.com/bobnomicon/lenslocked/errors"
+	"github.com/bobnomicon/lenslocked/models"
 )
 
 var (
