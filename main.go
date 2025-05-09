@@ -90,6 +90,7 @@ func main() {
 	userService := &models.UserService{DB: db}
 	sessionService := &models.SessionService{DB: db}
 	passwordResetService := &models.PasswordResetService{DB: db}
+	galleryService := &models.GalleryService{DB: db}
 	emailService := email.NewEmailService(cfg.SMTP)
 
 	var usersController controllers.Users
@@ -101,6 +102,9 @@ func main() {
 	userMiddleware := controllers.UserMiddleware{
 		SessionService: sessionService,
 	}
+
+	var galleriesController controllers.Galleries
+	galleriesController.Services.GalleryService = galleryService
 
 	// Parse static templates
 	homeTemplate := views.Must(views.ParseFS(templates.FS, "home.gohtml", "layout.gohtml"))
@@ -114,6 +118,9 @@ func main() {
 	usersController.Templates.CheckEmail = views.Must(views.ParseFS(templates.FS, "check-email.gohtml", "layout.gohtml"))
 	usersController.Templates.ResetPassword = views.Must(views.ParseFS(templates.FS, "reset-password.gohtml", "layout.gohtml"))
 	usersController.Templates.ForgotPasswordEmail = email.Must(email.ParseFS(templates.FS, "emails/forgot-password.gohtml"))
+
+	// Parse galleries templates
+	galleriesController.Templates.New = views.Must(views.ParseFS(templates.FS, "galleries/new.gohtml", "layout.gohtml"))
 
 	fmt.Println("Done parsing templates")
 
@@ -145,6 +152,9 @@ func main() {
 	r.Post("/signout", usersController.SignOut)
 	r.Get("/signup", usersController.SignUp)
 	r.Post("/signup", usersController.Create)
+
+	// Galleries routes
+	r.Get("/galleries/new", galleriesController.New)
 	
 	r.Route("/users/me", func(r chi.Router) {
 		r.Use(userMiddleware.RequireUser)

@@ -34,7 +34,7 @@ func (gs *GalleryService) Create(title string, userID int) (*Gallery, error) {
 	return &gallery, nil
 }
 
-func (gs *GalleryService) Get(id int) (*Gallery, error) {
+func (gs *GalleryService) GetById(id int) (*Gallery, error) {
 	gallery := Gallery{
 		ID: id,
 	}

@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"path/filepath"
 
 	"github.com/bobnomicon/lenslocked/context"
 	"github.com/bobnomicon/lenslocked/models"
@@ -86,7 +87,7 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data any, errs
 }
 
 func ParseFS(fs fs.FS, pattern ...string) (Template, error) {
-	htmlTpl := template.New(pattern[0])
+	htmlTpl := template.New(filepath.Base(pattern[0]))
 
 	// Placeholder funcs
 	htmlTpl = htmlTpl.Funcs(
