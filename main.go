@@ -133,6 +133,7 @@ func main() {
 		csrf.Protect(
 			[]byte(cfg.CSRF.Key),
 			csrf.Secure(cfg.CSRF.Secure),
+			csrf.Path("/"),
 		),
 		userMiddleware.SetUser,
 	)
@@ -153,12 +154,19 @@ func main() {
 	r.Get("/signup", usersController.SignUp)
 	r.Post("/signup", usersController.Create)
 
-	// Galleries routes
-	r.Get("/galleries/new", galleriesController.New)
-	
+	// Users routes - REQUIRE USER
 	r.Route("/users/me", func(r chi.Router) {
 		r.Use(userMiddleware.RequireUser)
 		r.Get("/", usersController.CurrentUser)
+	})
+
+	// Galleries routes
+	r.Route("/galleries", func(r chi.Router) {
+		// REQUIRE USER
+		r.Group(func(r chi.Router) {
+			r.Use(userMiddleware.RequireUser)
+			r.Get("/new", galleriesController.New)
+		})
 	})
 
 	// 404 route
