@@ -121,6 +121,7 @@ func main() {
 
 	// Parse galleries templates
 	galleriesController.Templates.New = views.Must(views.ParseFS(templates.FS, "galleries/new.gohtml", "layout.gohtml"))
+	galleriesController.Templates.Edit = views.Must(views.ParseFS(templates.FS, "galleries/edit.gohtml", "layout.gohtml"))
 
 	fmt.Println("Done parsing templates")
 
@@ -166,7 +167,8 @@ func main() {
 		r.Group(func(r chi.Router) {
 			r.Use(userMiddleware.RequireUser)
 			r.Get("/new", galleriesController.New)
-			r.Post("/new", galleriesController.Create)
+			r.Post("/", galleriesController.Create)
+			r.Get("/{id}/edit", galleriesController.Edit)
 		})
 	})
 
