@@ -40,6 +40,7 @@ type UserMiddleware struct {
 	SessionService *models.SessionService
 }
 
+
 /******** Middlewares ********/
 
 func (umw UserMiddleware) SetUser(next http.Handler) http.Handler {
@@ -85,6 +86,7 @@ func (umw UserMiddleware) RequireUser(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
 
 /******** GET handlers ********/
 
