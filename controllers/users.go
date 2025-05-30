@@ -13,11 +13,6 @@ import (
 	"github.com/bobnomicon/lenslocked/models"
 )
 
-var (
-	ErrMissingRequiredFields = errors.New("controllers: missing required fields")
-	ErrPasswordsDontMatch = errors.New("controllers: password and confirm password don't match")
-)
-
 type Users struct {
 	Templates struct {
 		SignUp Template
