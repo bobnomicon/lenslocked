@@ -107,21 +107,46 @@ func main() {
 	galleriesController.Services.GalleryService = galleryService
 
 	// Parse static templates
-	homeTemplate := views.Must(views.ParseFS(templates.FS, "home.gohtml", "layout.gohtml"))
-	contactTemplate := views.Must(views.ParseFS(templates.FS, "contact.gohtml", "layout.gohtml"))
-	faqTemplate := views.Must(views.ParseFS(templates.FS, "faq.gohtml", "layout.gohtml"))
+	homeTemplate := views.Must(views.ParseFS(templates.FS,
+		"home.gohtml", "layout.gohtml",
+	))
+	contactTemplate := views.Must(views.ParseFS(templates.FS,
+		"contact.gohtml", "layout.gohtml",
+	))
+	faqTemplate := views.Must(views.ParseFS(templates.FS,
+		"faq.gohtml", "layout.gohtml",
+	))
 
 	// Parse users templates
-	usersController.Templates.SignUp = views.Must(views.ParseFS(templates.FS, "signup.gohtml", "layout.gohtml"))
-	usersController.Templates.SignIn = views.Must(views.ParseFS(templates.FS, "signin.gohtml", "layout.gohtml"))
-	usersController.Templates.ForgotPassword = views.Must(views.ParseFS(templates.FS, "forgot-password.gohtml", "layout.gohtml"))
-	usersController.Templates.CheckEmail = views.Must(views.ParseFS(templates.FS, "check-email.gohtml", "layout.gohtml"))
-	usersController.Templates.ResetPassword = views.Must(views.ParseFS(templates.FS, "reset-password.gohtml", "layout.gohtml"))
-	usersController.Templates.ForgotPasswordEmail = email.Must(email.ParseFS(templates.FS, "emails/forgot-password.gohtml"))
+	usersController.Templates.SignUp = views.Must(views.ParseFS(templates.FS,
+		"signup.gohtml", "layout.gohtml",
+	))
+	usersController.Templates.SignIn = views.Must(views.ParseFS(templates.FS,
+		"signin.gohtml", "layout.gohtml",
+	))
+	usersController.Templates.ForgotPassword = views.Must(views.ParseFS(templates.FS,
+		"forgot-password.gohtml", "layout.gohtml",
+	))
+	usersController.Templates.CheckEmail = views.Must(views.ParseFS(templates.FS,
+		"check-email.gohtml", "layout.gohtml",
+	))
+	usersController.Templates.ResetPassword = views.Must(views.ParseFS(templates.FS,
+		"reset-password.gohtml", "layout.gohtml",
+	))
+	usersController.Templates.ForgotPasswordEmail = email.Must(email.ParseFS(templates.FS,
+		"emails/forgot-password.gohtml",
+	))
 
 	// Parse galleries templates
-	galleriesController.Templates.New = views.Must(views.ParseFS(templates.FS, "galleries/new.gohtml", "layout.gohtml"))
-	galleriesController.Templates.Edit = views.Must(views.ParseFS(templates.FS, "galleries/edit.gohtml", "layout.gohtml"))
+	galleriesController.Templates.New = views.Must(views.ParseFS(templates.FS,
+		"galleries/new.gohtml", "layout.gohtml",
+	))
+	galleriesController.Templates.Edit = views.Must(views.ParseFS(templates.FS,
+		"galleries/edit.gohtml", "layout.gohtml",
+	))
+	galleriesController.Templates.Index = views.Must(views.ParseFS(templates.FS,
+		"galleries/index.gohtml", "layout.gohtml",
+	))
 
 	fmt.Println("Done parsing templates")
 
@@ -166,6 +191,7 @@ func main() {
 		// REQUIRE USER
 		r.Group(func(r chi.Router) {
 			r.Use(userMiddleware.RequireUser)
+			r.Get("/", galleriesController.Index)
 			r.Get("/new", galleriesController.New)
 			r.Post("/new", galleriesController.Create)
 			r.Get("/{id}/edit", galleriesController.Edit)

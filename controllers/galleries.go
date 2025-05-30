@@ -16,6 +16,7 @@ type Galleries struct {
 	Templates struct {
 		New Template
 		Edit Template
+		Index Template
 	}
 
 	Services struct {
@@ -76,6 +77,40 @@ func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 	data.ID = gallery.ID
 	data.Title = gallery.Title
 	g.Templates.Edit.Execute(w, r, data)
+}
+
+func (g Galleries) Index(w http.ResponseWriter, r *http.Request) {
+	type Gallery struct {
+		ID int
+		Title string
+	}
+	var data struct {
+		Galleries []Gallery
+	}
+
+	// Get all galleries that belong to a user
+	user := context.User(r.Context())
+	galleries, err := g.Services.GalleryService.GetAllByUserID(user.ID)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			// User has no galleries
+			g.Templates.Index.Execute(w, r, data)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			g.Templates.Index.Execute(w, r, data, err)
+		}
+
+		return
+	}
+
+	for _, gallery := range galleries {
+		data.Galleries = append(data.Galleries, Gallery{
+			ID: gallery.ID,
+			Title: gallery.Title,
+		})
+	}
+
+	g.Templates.Index.Execute(w, r, data)
 }
 
 
