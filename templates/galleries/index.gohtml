@@ -1,7 +1,38 @@
 {{ template "header" . }}
 
-<div class="px-8">
-  <h1 class="py-8 text-4xl semibold tacking-light">My Galleries</h1>
+<div class="page">
+  <h1 class="w-full py-8 text-4xl semibold tacking-light">My Galleries</h1>
+
+  <table class="w-full table-fixed">
+    <thead>
+      <tr>
+        <th class="p-2 text-left w-24">ID</th>
+        <th class="p-2 text-left">Title</th>
+        <th class="p-2 text-left w-96">Actions</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {{ range .Galleries }}
+        {{ template "gallery" . }}
+      {{ end }}
+    </tbody>
+  </table>
+
+  <div class="py-8">
+    <a href="/galleries/new" class="py-2 px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-lg">New Gallery</a>
+  </div>
 </div>
 
 {{ template "footer" . }}
+
+{{ define "gallery" }}
+  <tr class="border">
+    <td class="p-2 border">{{ .ID }}</td>
+    <td class="p-2 border">{{ .Title }}</td>
+    <td class="p-2 border">
+      <a href="/galleries/{{ .ID }}">View</a>
+      <a href="/galleries/{{ .ID }}/edit">Edit</a>
+    </td>
+  </tr>
+{{ end }}
