@@ -5,9 +5,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+      body {
+        min-height: 100vh;
+      }
+      .page {
+        min-height: calc(100vh - 144px);
+        padding: 3rem 2rem;
+      }
+    </style>
   </head>
 
-  <body class="min-h-screen bg-gray-100">
+  <body class="bg-gray-100">
     <header class="bg-gradient-to-r from-blue-800 to-indigo-800 text-white">
       <nav class="px-8 py-6 flex items-center space-x-12">
         <div class="text-4xl font-serif">Lenslocked</div>
@@ -62,7 +71,7 @@
 <!-- Page content -->
 
 {{ define "footer" }}
-    <footer class="absolute bottom-0 w-full flex justify-center items-center bg-gradient-to-r from-blue-800 to-indigo-800 text-white h-14">
+    <footer class="w-full flex justify-center items-center bg-gradient-to-r from-blue-800 to-indigo-800 text-white h-14">
       <div>&copy; <span id="copyright">2025</span> Lenslocked</div>
     </footer>
   </body>
