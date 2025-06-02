@@ -87,6 +87,12 @@
       }
     }
 
+    function confirmDelete(event, resource) {
+      if (!confirm(`Do you really want to delete this ${resource}? This cannot be undone!`)) {
+        event.preventDefault();
+      }
+    }
+
     // Footer copyright
     const copyright = document.getElementById('copyright');
     copyright.innerText = new Date().getFullYear();

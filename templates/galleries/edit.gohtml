@@ -22,7 +22,7 @@
     <div class="pt-8">
       <h2 class="font-bold text-gray-900">Dangerous actions</h2>
 
-      <form action="/galleries/{{.ID}}/delete" method="POST" onsubmit="confirmDelete(event)">
+      <form action="/galleries/{{.ID}}/delete" method="POST" onsubmit="confirmDelete(event, 'gallery')">
         <div class="hidden">
           {{ csrfField }}
         </div>
@@ -36,11 +36,3 @@
 </div>
 
 {{ template "footer" . }}
-
-<script>
-  function confirmDelete(event) {
-    if (!confirm('Do you really want to delete this gallery? This cannot be undone!')) {
-      event.preventDefault();
-    }
-  }
-</script>
