@@ -194,6 +194,7 @@ func main() {
 			r.Get("/", galleriesController.Index)
 			r.Get("/new", galleriesController.New)
 			r.Post("/new", galleriesController.Create)
+			r.Get("/{id}", galleriesController.Show)
 			r.Get("/{id}/edit", galleriesController.Edit)
 			r.Post("/{id}/edit", galleriesController.Update)
 		})

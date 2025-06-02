@@ -1,8 +1,10 @@
 package controllers
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"strconv"
 
@@ -17,6 +19,7 @@ type Galleries struct {
 		New Template
 		Edit Template
 		Index Template
+		Show Template
 	}
 
 	Services struct {
@@ -111,6 +114,51 @@ func (g Galleries) Index(w http.ResponseWriter, r *http.Request) {
 	}
 
 	g.Templates.Index.Execute(w, r, data)
+}
+
+func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		ID int
+		Title string
+		Images []string
+	}
+
+	// Get the gallery id
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		g.Templates.Show.Execute(w, r, data, err)
+		return
+	}
+	data.ID = id
+
+	// Get the gallery
+	gallery, err := g.Services.GalleryService.GetById(data.ID)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			err = apperrors.Public(err, "Gallery not found.")
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		g.Templates.Show.Execute(w, r, data, err)
+		return
+	}
+
+	// TODO: Get gallery images. For now pseudo-randomly get 20 images from placecats.com until implement image uploads.
+	for range 20 {
+		// Width and height are random values between 200 and 700
+		w, h := rand.Intn(500) + 200, rand.Intn(500) + 200
+		// Generate URL from width and height
+		catImageURL := fmt.Sprintf("https://placecats.com/%d/%d", w, h)
+		data.Images = append(data.Images, catImageURL)
+	}
+
+	data.ID = gallery.ID
+	data.Title = gallery.Title
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(data)
 }
 
 
