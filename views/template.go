@@ -11,6 +11,9 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"maps"
+
+	"github.com/Masterminds/sprig/v3"
 	"github.com/bobnomicon/lenslocked/context"
 	"github.com/bobnomicon/lenslocked/models"
 	"github.com/gorilla/csrf"
@@ -54,19 +57,17 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data any, errs
 	errMsgs := getErrMessages(errs...)
 
 	// Replace placholder funcs
-	htmlTpl = htmlTpl.Funcs(
-		template.FuncMap{
-			"csrfField": func() template.HTML {
-				return csrf.TemplateField(r)
-			},
-			"currentUser": func() *models.User {
-				return context.User(r.Context())
-			},
-			"errors": func() []string {
-				return errMsgs
-			},
+	htmlTpl = htmlTpl.Funcs(template.FuncMap{
+		"csrfField": func() template.HTML {
+			return csrf.TemplateField(r)
 		},
-	)
+		"currentUser": func() *models.User {
+			return context.User(r.Context())
+		},
+		"errors": func() []string {
+			return errMsgs
+		},
+	})
 	
 	// Set the content type header
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -90,19 +91,22 @@ func ParseFS(fs fs.FS, pattern ...string) (Template, error) {
 	htmlTpl := template.New(filepath.Base(pattern[0]))
 
 	// Placeholder funcs
-	htmlTpl = htmlTpl.Funcs(
-		template.FuncMap{
-			"csrfField": func() (template.HTML, error) {
-				return "", fmt.Errorf("csrfField not implemented")
-			},
-			"currentUser": func() (*models.User, error) {
-				return nil, fmt.Errorf("currentUser not implemented")
-			},
-			"errors": func() []string {
-				return nil
-			},
+	funcMap := template.FuncMap{
+		"csrfField": func() (template.HTML, error) {
+			return "", fmt.Errorf("csrfField not implemented")
 		},
-	)
+		"currentUser": func() (*models.User, error) {
+			return nil, fmt.Errorf("currentUser not implemented")
+		},
+		"errors": func() []string {
+			return nil
+		},
+	}
+
+	// Add sprig functions
+	maps.Copy(funcMap, sprig.FuncMap())
+
+	htmlTpl = htmlTpl.Funcs(funcMap)
 
 	// Parse the template
 	htmlTpl, err := htmlTpl.ParseFS(fs, pattern...)

@@ -147,6 +147,9 @@ func main() {
 	galleriesController.Templates.Index = views.Must(views.ParseFS(templates.FS,
 		"galleries/index.gohtml", "layout.gohtml",
 	))
+	galleriesController.Templates.Show = views.Must(views.ParseFS(templates.FS,
+		"galleries/show.gohtml", "layout.gohtml",
+	))
 
 	fmt.Println("Done parsing templates")
 

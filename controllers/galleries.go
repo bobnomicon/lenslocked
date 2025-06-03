@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -157,8 +156,7 @@ func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
 
 	data.ID = gallery.ID
 	data.Title = gallery.Title
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(data)
+	g.Templates.Show.Execute(w, r, data)
 }
 
 
