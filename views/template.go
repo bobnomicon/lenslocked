@@ -11,8 +11,6 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"maps"
-
 	"github.com/Masterminds/sprig/v3"
 	"github.com/bobnomicon/lenslocked/context"
 	"github.com/bobnomicon/lenslocked/models"
@@ -91,7 +89,7 @@ func ParseFS(fs fs.FS, pattern ...string) (Template, error) {
 	htmlTpl := template.New(filepath.Base(pattern[0]))
 
 	// Placeholder funcs
-	funcMap := template.FuncMap{
+	htmlTpl = htmlTpl.Funcs(template.FuncMap{
 		"csrfField": func() (template.HTML, error) {
 			return "", fmt.Errorf("csrfField not implemented")
 		},
@@ -101,12 +99,10 @@ func ParseFS(fs fs.FS, pattern ...string) (Template, error) {
 		"errors": func() []string {
 			return nil
 		},
-	}
+	})
 
-	// Add sprig functions
-	maps.Copy(funcMap, sprig.FuncMap())
-
-	htmlTpl = htmlTpl.Funcs(funcMap)
+	// Add sprig funcs
+	htmlTpl.Funcs(sprig.FuncMap())
 
 	// Parse the template
 	htmlTpl, err := htmlTpl.ParseFS(fs, pattern...)
