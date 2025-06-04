@@ -101,7 +101,7 @@ func ParseFS(fs fs.FS, pattern ...string) (Template, error) {
 		},
 	})
 
-	// Add sprig funcs
+	// Add Sprig funcs
 	htmlTpl.Funcs(sprig.FuncMap())
 
 	// Parse the template
