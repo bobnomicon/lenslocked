@@ -26,6 +26,33 @@ type Galleries struct {
 	}
 }
 
+/******** Helpers ********/
+
+// Gets a gallery by ID from the request `id` param. If an error occurs, writes the appropriate status code and error message for the response.
+func (g Galleries) galleryByID(w http.ResponseWriter, r *http.Request) (*models.Gallery, error) {
+	// Get the gallery id
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return nil, err
+	}
+
+	// Get the gallery
+	gallery, err := g.Services.GalleryService.GetById(id)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			err = apperrors.Public(err, "Gallery not found.")
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		return nil, err
+	}
+
+	return gallery, nil
+}
+
 
 /******** GET handlers ********/
 
@@ -122,25 +149,9 @@ func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
 		Images []string
 	}
 
-	// Get the gallery id
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		g.Templates.Show.Execute(w, r, data, err)
-		return
-	}
-	data.ID = id
-
 	// Get the gallery
-	gallery, err := g.Services.GalleryService.GetById(data.ID)
+	gallery, err := g.galleryByID(w, r)
 	if err != nil {
-		if errors.Is(err, models.ErrNotFound) {
-			w.WriteHeader(http.StatusNotFound)
-			err = apperrors.Public(err, "Gallery not found.")
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-
 		g.Templates.Show.Execute(w, r, data, err)
 		return
 	}
