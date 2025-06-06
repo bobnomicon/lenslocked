@@ -53,6 +53,17 @@ func (g Galleries) galleryByID(w http.ResponseWriter, r *http.Request) (*models.
 	return gallery, nil
 }
 
+// Checks if gallery is owned by user, if not, writes a 403 Forbidden status code and appropriate error message for the response.
+func userMustOwnGallery(w http.ResponseWriter, r *http.Request, gallery *models.Gallery) error {
+		user := context.User(r.Context())
+		if gallery.UserID != user.ID {
+			w.WriteHeader(http.StatusForbidden)
+			return apperrors.Public(ErrUnauthorized, "You do not have permission to edit this gallery.")
+		}
+
+		return nil
+}
+
 
 /******** GET handlers ********/
 
@@ -80,10 +91,8 @@ func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 	data.ID = gallery.ID
 
 	// Check gallery belongs to user
-	user := context.User(r.Context())
-	if gallery.UserID != user.ID {
-		w.WriteHeader(http.StatusForbidden)
-		err = apperrors.Public(err, "You do not have permission to edit this gallery.")
+	err = userMustOwnGallery(w, r, gallery)
+	if err != nil {
 		g.Templates.Edit.Execute(w, r, data, err)
 		return
 	}
@@ -205,10 +214,8 @@ func (g Galleries) Update(w http.ResponseWriter, r *http.Request) {
 	data.ID = gallery.ID
 
 	// Check gallery belongs to user
-	user := context.User(r.Context())
-	if gallery.UserID != user.ID {
-		w.WriteHeader(http.StatusForbidden)
-		err = apperrors.Public(err, "You do not have permission to edit this gallery.")
+	err = userMustOwnGallery(w, r, gallery)
+	if err != nil {
 		g.Templates.Edit.Execute(w, r, data, err)
 		return
 	}
