@@ -38,15 +38,14 @@
 {{ template "footer" . }}
 
 <script>
-  window.addEventListener('DOMContentLoaded', () => {
-    const editGalleryForm = document.getElementById('editGallery');
-    const deleteGalleryForm = document.getElementById('deleteGallery');
+  // Disable update and delete buttons if error (a gallery not found or user does not have permission error results in the template being executed with ID = 0)
+  const editGalleryForm = document.getElementById('editGallery');
+  const deleteGalleryForm = document.getElementById('deleteGallery');
 
-    if (editGalleryForm.action.includes('/galleries/0/edit')) {
-      editGalleryForm.querySelector('button[type=submit]').setAttribute('disabled', true);
-    }
-    if (deleteGalleryForm.action.includes('/galleries/0/delete')) {
-      deleteGalleryForm.querySelector('button[type=submit]').setAttribute('disabled', true);
-    }
-  });
+  if (editGalleryForm.action.includes('/galleries/0/edit')) {
+    editGalleryForm.querySelector('button[type=submit]').setAttribute('disabled', true);
+  }
+  if (deleteGalleryForm.action.includes('/galleries/0/delete')) {
+    deleteGalleryForm.querySelector('button[type=submit]').setAttribute('disabled', true);
+  }
 </script>
