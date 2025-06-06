@@ -71,28 +71,13 @@ func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 		Title string
 	}
 
-	// Get the gallery id
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		g.Templates.Edit.Execute(w, r, data, err)
-		return
-	}
-	data.ID = id
-
 	// Get the gallery
-	gallery, err := g.Services.GalleryService.GetById(data.ID)
+	gallery, err := g.galleryByID(w, r)
 	if err != nil {
-		if errors.Is(err, models.ErrNotFound) {
-			w.WriteHeader(http.StatusNotFound)
-			err = apperrors.Public(err, "Gallery not found.")
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-
 		g.Templates.Edit.Execute(w, r, data, err)
 		return
 	}
+	data.ID = gallery.ID
 
 	// Check gallery belongs to user
 	user := context.User(r.Context())
@@ -103,7 +88,6 @@ func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data.ID = gallery.ID
 	data.Title = gallery.Title
 	g.Templates.Edit.Execute(w, r, data)
 }
@@ -155,6 +139,8 @@ func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
 		g.Templates.Show.Execute(w, r, data, err)
 		return
 	}
+	data.ID = gallery.ID
+	data.Title = gallery.Title
 
 	// TODO: Get gallery images. For now pseudo-randomly get 20 images from placecats.com until implement image uploads.
 	for range 20 {
@@ -165,8 +151,6 @@ func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
 		data.Images = append(data.Images, catImageURL)
 	}
 
-	data.ID = gallery.ID
-	data.Title = gallery.Title
 	g.Templates.Show.Execute(w, r, data)
 }
 
@@ -212,28 +196,13 @@ func (g Galleries) Update(w http.ResponseWriter, r *http.Request) {
 		Title string
 	}
 
-	// Get the gallery id
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		g.Templates.Edit.Execute(w, r, data, err)
-		return
-	}
-	data.ID = id
-
 	// Get the gallery
-	gallery, err := g.Services.GalleryService.GetById(id)
+	gallery, err := g.galleryByID(w, r)
 	if err != nil {
-		if errors.Is(err, models.ErrNotFound) {
-			w.WriteHeader(http.StatusNotFound)
-			err = apperrors.Public(err, "Gallery not found.")
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-
 		g.Templates.Edit.Execute(w, r, data, err)
 		return
 	}
+	data.ID = gallery.ID
 
 	// Check gallery belongs to user
 	user := context.User(r.Context())
