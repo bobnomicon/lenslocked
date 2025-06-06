@@ -243,3 +243,29 @@ func (g Galleries) Update(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, fmt.Sprintf("/galleries/%d/edit", gallery.ID), http.StatusFound)
 }
+
+func (g Galleries) Delete(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		ID int
+		Title string
+	}
+
+	// Get the gallery, check it belongs to user
+	gallery, err := g.galleryByID(w, r, userMustOwnGallery)
+	if err != nil {
+		g.Templates.Edit.Execute(w, r, data, err)
+		return
+	}
+	data.ID = gallery.ID
+	data.Title = gallery.Title
+
+	// Delete the gallery
+	err = g.Services.GalleryService.Delete(gallery.ID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		g.Templates.Edit.Execute(w, r, data, err)
+		return
+	}
+
+	http.Redirect(w, r, "/galleries", http.StatusFound)
+}

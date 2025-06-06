@@ -200,6 +200,7 @@ func main() {
 			r.Get("/{id}", galleriesController.Show)
 			r.Get("/{id}/edit", galleriesController.Edit)
 			r.Post("/{id}/edit", galleriesController.Update)
+			r.Post("/{id}/delete", galleriesController.Delete)
 		})
 	})
 
