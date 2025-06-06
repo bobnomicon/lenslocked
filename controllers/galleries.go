@@ -28,8 +28,21 @@ type Galleries struct {
 
 /******** Helpers ********/
 
-// Gets a gallery by ID from the request `id` param. If an error occurs, writes the appropriate status code and error message for the response.
-func (g Galleries) galleryByID(w http.ResponseWriter, r *http.Request) (*models.Gallery, error) {
+type galleryOpt func(w http.ResponseWriter, r *http.Request, gallery *models.Gallery) error
+
+// Checks if gallery is owned by user, if not, writes a 403 Forbidden status code and appropriate error message for the response.
+func userMustOwnGallery(w http.ResponseWriter, r *http.Request, gallery *models.Gallery) error {
+	user := context.User(r.Context())
+	if gallery.UserID != user.ID {
+		w.WriteHeader(http.StatusForbidden)
+		return apperrors.Public(ErrUnauthorized, "You do not have permission to edit this gallery.")
+	}
+
+	return nil
+}
+
+// Gets a gallery by ID from the request `id` param. If an error occurs, writes the appropriate status code and error message for the response. Additionally, if functional gallery options are passed, calls each one and returns an error if something is not okay.
+func (g Galleries) galleryByID(w http.ResponseWriter, r *http.Request, opts ...galleryOpt) (*models.Gallery, error) {
 	// Get the gallery id
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
@@ -50,18 +63,14 @@ func (g Galleries) galleryByID(w http.ResponseWriter, r *http.Request) (*models.
 		return nil, err
 	}
 
-	return gallery, nil
-}
-
-// Checks if gallery is owned by user, if not, writes a 403 Forbidden status code and appropriate error message for the response.
-func userMustOwnGallery(w http.ResponseWriter, r *http.Request, gallery *models.Gallery) error {
-		user := context.User(r.Context())
-		if gallery.UserID != user.ID {
-			w.WriteHeader(http.StatusForbidden)
-			return apperrors.Public(ErrUnauthorized, "You do not have permission to edit this gallery.")
+	// Iterate over functional gallery options, call each one and return error if there is an error
+	for _, opt := range opts {
+		if err = opt(w, r, gallery); err != nil {
+			return nil, err
 		}
+	}
 
-		return nil
+	return gallery, nil
 }
 
 
@@ -82,21 +91,14 @@ func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 		Title string
 	}
 
-	// Get the gallery
-	gallery, err := g.galleryByID(w, r)
+	// Get the gallery, check it belongs to user
+	gallery, err := g.galleryByID(w, r, userMustOwnGallery)
 	if err != nil {
 		g.Templates.Edit.Execute(w, r, data, err)
 		return
 	}
+
 	data.ID = gallery.ID
-
-	// Check gallery belongs to user
-	err = userMustOwnGallery(w, r, gallery)
-	if err != nil {
-		g.Templates.Edit.Execute(w, r, data, err)
-		return
-	}
-
 	data.Title = gallery.Title
 	g.Templates.Edit.Execute(w, r, data)
 }
@@ -110,7 +112,7 @@ func (g Galleries) Index(w http.ResponseWriter, r *http.Request) {
 		Galleries []Gallery
 	}
 
-	// Get all galleries that belong to a user
+	// Get all galleries that belong to user
 	user := context.User(r.Context())
 	galleries, err := g.Services.GalleryService.GetAllByUserID(user.ID)
 	if err != nil {
@@ -205,20 +207,13 @@ func (g Galleries) Update(w http.ResponseWriter, r *http.Request) {
 		Title string
 	}
 
-	// Get the gallery
-	gallery, err := g.galleryByID(w, r)
+	// Get the gallery, check it belongs to user
+	gallery, err := g.galleryByID(w, r, userMustOwnGallery)
 	if err != nil {
 		g.Templates.Edit.Execute(w, r, data, err)
 		return
 	}
 	data.ID = gallery.ID
-
-	// Check gallery belongs to user
-	err = userMustOwnGallery(w, r, gallery)
-	if err != nil {
-		g.Templates.Edit.Execute(w, r, data, err)
-		return
-	}
 
 	// Parse form fields
 	err = r.ParseForm()
