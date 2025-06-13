@@ -13,11 +13,6 @@ import (
 	"github.com/bobnomicon/lenslocked/models"
 )
 
-var (
-	ErrMissingRequiredFields = errors.New("controllers: missing required fields")
-	ErrPasswordsDontMatch = errors.New("controllers: password and confirm password don't match")
-)
-
 type Users struct {
 	Templates struct {
 		SignUp Template
@@ -39,6 +34,7 @@ type Users struct {
 type UserMiddleware struct {
 	SessionService *models.SessionService
 }
+
 
 /******** Middlewares ********/
 
@@ -85,6 +81,7 @@ func (umw UserMiddleware) RequireUser(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
 
 /******** GET handlers ********/
 
@@ -241,7 +238,7 @@ func (u Users) Authenticate(w http.ResponseWriter, r *http.Request) {
 
 	// Set cookie with session token
   setCookie(w, CookieSession, session.Token)
-	http.Redirect(w, r, "/users/me", http.StatusFound)
+	http.Redirect(w, r, "/galleries", http.StatusFound)
 }
 
 func (u Users) SignOut(w http.ResponseWriter, r *http.Request) {

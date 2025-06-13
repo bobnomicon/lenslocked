@@ -1,0 +1,55 @@
+{{ template "header" . }}
+
+<div class="page">
+  <h1 class="w-full py-8 text-4xl semibold tacking-light">My Galleries</h1>
+
+  <table class="w-full table-fixed">
+    <thead>
+      <tr>
+        <th class="p-2 text-left w-24">ID</th>
+        <th class="p-2 text-left">Title</th>
+        <th class="p-2 text-left w-24">Published</th>
+        <th class="p-2 text-left w-96">Actions</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {{ range .Galleries }}
+        {{ template "gallery" . }}
+      {{ end }}
+    </tbody>
+  </table>
+
+  <div class="py-8">
+    <a href="/galleries/new" class="py-2 px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-lg">New Gallery</a>
+  </div>
+</div>
+
+{{ template "footer" . }}
+
+{{ define "gallery" }}
+  <tr class="border">
+    <td class="p-2 border">{{ .ID }}</td>
+    <td class="p-2 border">{{ .Title }}</td>
+    <td class="p-2 border">
+      {{ if .Published }}
+        <span class="py-1 px-2 text-sm text-green-600">Yes</span>
+      {{ else }}
+        <span class="py-1 px-2 text-sm text-red-600">No</span>
+      {{ end }}
+    </td>
+    <td class="p-2 border flex space-x-2">
+      <a href="/galleries/{{.ID}}" class="py-1 px-2 bg-blue-100 hover:bg-blue-200 rounded border border-blue-600 text-xs text-blue-600">View</a>
+
+      <a href="/galleries/{{.ID}}/edit" class="py-1 px-2 bg-yellow-100 hover:bg-yellow-200 rounded border border-yellow-600 text-xs text-yellow-600">Edit</a>
+
+      <form action="/galleries/{{.ID}}/delete" method="POST" onsubmit="confirmDelete(event, 'gallery')">
+        <div class="hidden">
+          {{ csrfField}}
+        </div>
+
+        <button type="submit" class="py-1 px-2 bg-red-100 hover:bg-red-200 rounded border border-red-600 text-xs text-red-600">Delete</button>
+      </form>
+    </td>
+  </tr>
+{{ end }}

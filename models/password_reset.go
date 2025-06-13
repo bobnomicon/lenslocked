@@ -17,12 +17,6 @@ const (
 	DefaultResetDuration = 1 * time.Hour
 )
 
-var (
-	ErrEmailDoesNotExist = errors.New("models: email does not exist")
-	ErrTokenInvalid = errors.New("models: password reset token does not exist")
-	ErrTokenExpired = errors.New("modles: password reset token expired")
-)
-
 type PasswordReset struct {
 	ID int
 	UserId int
