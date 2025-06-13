@@ -30,12 +30,24 @@ type Galleries struct {
 
 type galleryOpt func(w http.ResponseWriter, r *http.Request, gallery *models.Gallery) error
 
-// Checks if gallery is owned by user, if not, writes a 403 Forbidden status code and appropriate error message for the response.
+// Checks if gallery is owned by user, if not, writes a 404 Not Found status code and appropriate error message for the response.
 func userMustOwnGallery(w http.ResponseWriter, r *http.Request, gallery *models.Gallery) error {
 	user := context.User(r.Context())
 	if gallery.UserID != user.ID {
-		w.WriteHeader(http.StatusForbidden)
-		return apperrors.Public(ErrUnauthorized, "You do not have permission to edit this gallery.")
+		w.WriteHeader(http.StatusNotFound)
+		return apperrors.Public(ErrUnauthorized, "Gallery not found.")
+	}
+
+	return nil
+}
+
+// Checks if gallery is published, and if not owned by user, writes a 404 Not Found status code and appropriate error message for the response.
+func galleryMustBePublished(w http.ResponseWriter, r *http.Request, gallery *models.Gallery) error {
+	user := context.User(r.Context())
+	if gallery.UserID != user.ID && !gallery.Published {
+		w.WriteHeader(http.StatusNotFound)
+		return apperrors.Public(ErrUnauthorized, "Gallery not found.")
+
 	}
 
 	return nil
@@ -89,6 +101,7 @@ func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		ID int
 		Title string
+		Published bool
 	}
 
 	// Get the gallery, check it belongs to user
@@ -100,6 +113,7 @@ func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 
 	data.ID = gallery.ID
 	data.Title = gallery.Title
+	data.Published = gallery.Published
 	g.Templates.Edit.Execute(w, r, data)
 }
 
@@ -107,6 +121,7 @@ func (g Galleries) Index(w http.ResponseWriter, r *http.Request) {
 	type Gallery struct {
 		ID int
 		Title string
+		Published bool
 	}
 	var data struct {
 		Galleries []Gallery
@@ -131,6 +146,7 @@ func (g Galleries) Index(w http.ResponseWriter, r *http.Request) {
 		data.Galleries = append(data.Galleries, Gallery{
 			ID: gallery.ID,
 			Title: gallery.Title,
+			Published: gallery.Published,
 		})
 	}
 
@@ -141,17 +157,19 @@ func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		ID int
 		Title string
+		Published bool
 		Images []string
 	}
 
-	// Get the gallery
-	gallery, err := g.galleryByID(w, r)
+	// Get the gallery, check it is published or belongs to user
+	gallery, err := g.galleryByID(w, r, galleryMustBePublished)
 	if err != nil {
 		g.Templates.Show.Execute(w, r, data, err)
 		return
 	}
 	data.ID = gallery.ID
 	data.Title = gallery.Title
+	data.Published = gallery.Published
 
 	// TODO: Get gallery images. For now pseudo-randomly get 20 images from placecats.com until implement image uploads.
 	for range 20 {
@@ -205,6 +223,7 @@ func (g Galleries) Update(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		ID int
 		Title string
+		Published bool
 	}
 
 	// Get the gallery, check it belongs to user
@@ -223,8 +242,9 @@ func (g Galleries) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data.Title = r.PostForm.Get("title")
+	data.Published = r.PostForm.Get("published") == "on"
 
-	// Check required fileds
+	// Check required fields
 	if data.Title == "" {
 		err = apperrors.Public(ErrMissingRequiredFields, "Please enter a title.")
 		w.WriteHeader(http.StatusBadRequest)
@@ -234,6 +254,7 @@ func (g Galleries) Update(w http.ResponseWriter, r *http.Request) {
 
 	// Update the gallery
 	gallery.Title = data.Title
+	gallery.Published = data.Published
 	err = g.Services.GalleryService.Update(gallery)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -248,6 +269,7 @@ func (g Galleries) Delete(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		ID int
 		Title string
+		Published bool
 	}
 
 	// Get the gallery, check it belongs to user
@@ -258,6 +280,7 @@ func (g Galleries) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	data.ID = gallery.ID
 	data.Title = gallery.Title
+	data.Published = gallery.Published
 
 	// Delete the gallery
 	err = g.Services.GalleryService.Delete(gallery.ID)
