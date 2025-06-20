@@ -43,11 +43,12 @@ func userMustOwnGallery(w http.ResponseWriter, r *http.Request, gallery *models.
 
 // Checks if gallery is published, and if not owned by user, writes a 404 Not Found status code and appropriate error message for the response.
 func galleryMustBePublished(w http.ResponseWriter, r *http.Request, gallery *models.Gallery) error {
-	user := context.User(r.Context())
-	if gallery.UserID != user.ID && !gallery.Published {
-		w.WriteHeader(http.StatusNotFound)
-		return apperrors.Public(ErrUnauthorized, "Gallery not found.")
-
+	if !gallery.Published {
+		user := context.User(r.Context())
+		if user == nil || user.ID != gallery.UserID {
+			w.WriteHeader(http.StatusNotFound)
+			return apperrors.Public(ErrUnauthorized, "Gallery not found.")
+		}
 	}
 
 	return nil

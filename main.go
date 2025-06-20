@@ -191,13 +191,15 @@ func main() {
 
 	// Galleries routes
 	r.Route("/galleries", func(r chi.Router) {
+		// Anyone can view a gallery as long as it's published
+		r.Get("/{id}", galleriesController.Show)
+
 		// REQUIRE USER
 		r.Group(func(r chi.Router) {
 			r.Use(userMiddleware.RequireUser)
 			r.Get("/", galleriesController.Index)
 			r.Get("/new", galleriesController.New)
 			r.Post("/new", galleriesController.Create)
-			r.Get("/{id}", galleriesController.Show)
 			r.Get("/{id}/edit", galleriesController.Edit)
 			r.Post("/{id}/edit", galleriesController.Update)
 			r.Post("/{id}/delete", galleriesController.Delete)
