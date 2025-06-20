@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/bobnomicon/lenslocked/controllers"
 	"github.com/bobnomicon/lenslocked/email"
@@ -32,6 +33,8 @@ type config struct {
 	}
 	App struct {
 		Url string
+		ImagesDir string
+		ImagesExt string
 	}
 }
 
@@ -57,6 +60,8 @@ func loadEnvConfig() (config, error) {
 	cfg.Server.Address = os.Getenv("SERVER_ADDRESS")
 	cfg.Server.Port = os.Getenv("SERVER_PORT")
 	cfg.App.Url = os.Getenv("APP_URL")
+	cfg.App.ImagesDir = os.Getenv("APP_IMAGES_DIR")
+	cfg.App.ImagesExt = os.Getenv("APP_IMAGES_EXT")
 
 	return cfg, nil
 }
@@ -90,7 +95,11 @@ func main() {
 	userService := &models.UserService{DB: db}
 	sessionService := &models.SessionService{DB: db}
 	passwordResetService := &models.PasswordResetService{DB: db}
-	galleryService := &models.GalleryService{DB: db}
+	galleryService := &models.GalleryService{
+		DB: db,
+		ImagesDir: cfg.App.ImagesDir,
+		ImagesExt: strings.Split(cfg.App.ImagesExt, ","),
+	}
 	emailService := email.NewEmailService(cfg.SMTP)
 
 	var usersController controllers.Users

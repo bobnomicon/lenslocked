@@ -244,6 +244,9 @@ $RECYCLE.BIN/
 lenslocked
 goose-psql
 
+# Image uploads
+images/
+
 # Modd
 modd.conf
 
