@@ -8,8 +8,8 @@
     {{ with . }}
       {{ range $index, $value := .Images }}
         <div class="h-min w-full">
-          <a href="{{ $value }}" target="_blank">
-              <img src="{{ $value }}" alt="{{ $.Title | title }} Image {{ $counter }}" class="w-full">
+          <a href="/galleries/{{ $value.GalleryID }}/images/{{ $value.Filename }}" target="_blank">
+              <img src="/galleries/{{ $value.GalleryID }}/images/{{ $value.Filename }}" alt="{{ $.Title | title }} Image {{ $counter }}" class="w-full">
           </a>
         </div>
         {{ $counter = add $counter 1 }}

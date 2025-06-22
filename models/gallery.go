@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -16,7 +18,9 @@ type Gallery struct {
 }
 
 type Image struct {
+	GalleryID int
 	Path string
+	Filename string
 }
 
 type GalleryService struct {
@@ -165,10 +169,31 @@ func (gs *GalleryService) Images(galleryID int) ([]Image, error) {
 	for _, file := range allFiles {
 		if hasExtension(file, gs.supportedExt()...) {
 			images = append(images, Image{
+				GalleryID: galleryID,
 				Path: file,
+				Filename: filepath.Base(file),
 			})
 		}
 	}
 
 	return images, nil
+}
+
+func (gs *GalleryService) Image(galleryID int, filename string) (*Image, error) {
+	imagePath := filepath.Join(gs.galleryDir(galleryID), filename)
+
+	// Check if image exists
+	_, err := os.Stat(imagePath)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("get image: %w", err)
+	}
+	
+	return &Image{
+		GalleryID: galleryID,
+		Path: imagePath,
+		Filename: filepath.Base(imagePath),
+	}, nil
 }

@@ -3,7 +3,6 @@ package controllers
 import (
 	"errors"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"strconv"
 
@@ -155,11 +154,15 @@ func (g Galleries) Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
+	type Image struct {
+		GalleryID int
+		Filename string
+	}
 	var data struct {
 		ID int
 		Title string
 		Published bool
-		Images []string
+		Images []Image
 	}
 
 	// Get the gallery, check it is published or belongs to user
@@ -172,16 +175,63 @@ func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
 	data.Title = gallery.Title
 	data.Published = gallery.Published
 
-	// TODO: Get gallery images. For now pseudo-randomly get 20 images from placecats.com until implement image uploads.
-	for range 20 {
-		// Width and height are random values between 200 and 700
-		w, h := rand.Intn(500) + 200, rand.Intn(500) + 200
-		// Generate URL from width and height
-		catImageURL := fmt.Sprintf("https://placecats.com/%d/%d", w, h)
-		data.Images = append(data.Images, catImageURL)
+	images, err := g.Services.GalleryService.Images(gallery.ID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		g.Templates.Show.Execute(w, r, data, err)
+		return
+	}
+	
+	for _, image := range images {
+		data.Images = append(data.Images, Image{
+			GalleryID: image.GalleryID,
+			Filename: image.Filename,
+		})
 	}
 
 	g.Templates.Show.Execute(w, r, data)
+}
+
+func (g Galleries) Image(w http.ResponseWriter, r *http.Request) {
+	type Image struct {
+		GalleryID int
+		Filename string
+	}
+	var data struct {
+		ID int
+		Title string
+		Published bool
+		Images []Image
+	}
+
+	// Get the gallery, check it is published or belongs to user
+	gallery, err := g.galleryByID(w, r, galleryMustBePublished)
+	if err != nil {
+		g.Templates.Show.Execute(w, r, data, err)
+		return
+	}
+	data.ID = gallery.ID
+	data.Title = gallery.Title
+	data.Published = gallery.Published
+
+	// Get the image
+	filename := chi.URLParam(r, "filename")
+	image, err := g.Services.GalleryService.Image(gallery.ID, filename)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			// Image does not exist
+			w.WriteHeader(http.StatusNotFound)
+			err = apperrors.Public(err, "Image not found.")
+		} else {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		g.Templates.Show.Execute(w, r, data, err)
+		return
+	}
+
+	http.ServeFile(w, r, image.Path)
 }
 
 

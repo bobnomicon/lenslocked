@@ -202,6 +202,7 @@ func main() {
 	r.Route("/galleries", func(r chi.Router) {
 		// Anyone can view a gallery as long as it's published
 		r.Get("/{id}", galleriesController.Show)
+		r.Get("/{id}/images/{filename}", galleriesController.Image)
 
 		// REQUIRE USER
 		r.Group(func(r chi.Router) {
