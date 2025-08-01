@@ -30,8 +30,9 @@ type GalleryService struct {
 }
 
 func hasExtension(file string, extensions ...string) bool {
+	file = strings.ToLower(file)
+	
 	for _, ext := range extensions {
-		file = strings.ToLower(file)
 		ext = strings.ToLower(strings.TrimSpace(ext))
 		if filepath.Ext(file) == ext {
 			return true
