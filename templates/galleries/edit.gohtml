@@ -1,7 +1,7 @@
 {{ template "header" . }}
 
 <div class="page flex flex-col items-center">
-  <div class="w-1/3 px-8 py-8 bg-white rounded shadow">
+  <div class="w-2/3 px-8 py-8 bg-white rounded shadow">
     <h1 class="pt-4 pb-8 text-center text-3xl font-bold text-gray-900">Edit your gallery</h1>
 
     <form id="editGallery" action="/galleries/{{.ID}}/edit" method="POST">
@@ -24,8 +24,23 @@
       </div>
     </form>
 
-    <div class="pt-8">
-      <h2 class="font-bold text-gray-900">Dangerous actions</h2>
+    <div class="pt-8 pb-2">
+      <h2 class="font-bold text-xl text-gray-900">Current Images</h2>
+      <div class="grid grid-cols-4 gap-y-8 gap-x-4">
+        {{ $counter := 1 }}
+        {{ with . }}
+          {{ range $index, $value := .Images }}
+            <div class="h-min w-full flex self-end">
+              <img src="/galleries/{{ $value.GalleryID }}/images/{{ $value.FilenameEscaped }}" alt="{{ $.Title | title }} Image {{ $counter }}" class="w-full">
+            </div>
+            {{ $counter = add $counter 1 }}
+          {{ end }}
+        {{ end }}
+      </div>
+    </div>
+
+    <div class="pt-12">
+      <h2 class="font-bold text-xl text-gray-900">Dangerous Actions</h2>
 
       <form id="deleteGallery" action="/galleries/{{.ID}}/delete" method="POST" onsubmit="confirmDelete(event, 'gallery')">
         <div class="hidden">

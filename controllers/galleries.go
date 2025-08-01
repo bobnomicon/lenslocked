@@ -99,10 +99,16 @@ func (g Galleries) New(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
+	type Image struct {
+		GalleryID int
+		Filename string
+		FilenameEscaped string
+	}
 	var data struct {
 		ID int
 		Title string
 		Published bool
+		Images []Image
 	}
 
 	// Get the gallery, check it belongs to user
@@ -115,6 +121,22 @@ func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 	data.ID = gallery.ID
 	data.Title = gallery.Title
 	data.Published = gallery.Published
+
+	images, err := g.Services.GalleryService.Images(gallery.ID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		g.Templates.Edit.Execute(w, r, data, err)
+		return
+	}
+
+	for _, image := range images {
+		data.Images = append(data.Images, Image{
+			GalleryID: image.GalleryID,
+			Filename: image.Filename,
+			FilenameEscaped: url.PathEscape(image.Filename),
+		})
+	}
+
 	g.Templates.Edit.Execute(w, r, data)
 }
 
