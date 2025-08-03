@@ -24,20 +24,25 @@
       </div>
     </form>
 
-    <div class="pt-8 pb-2">
-      <h2 class="font-bold text-xl text-gray-900">Current Images</h2>
-      <div class="grid grid-cols-4 gap-y-8 gap-x-4">
-        {{ $counter := 1 }}
-        {{ with . }}
-          {{ range $index, $value := .Images }}
-            <div class="h-min w-full flex self-end">
-              <img src="/galleries/{{ $value.GalleryID }}/images/{{ $value.FilenameEscaped }}" alt="{{ $.Title | title }} Image {{ $counter }}" class="w-full">
-            </div>
-            {{ $counter = add $counter 1 }}
+    {{ if .Images}}
+      <div class="pt-8 pb-2">
+        <h2 class="font-bold text-xl text-gray-900">Current Images</h2>
+        <div class="grid grid-cols-4 gap-y-8 gap-x-4">
+          {{ $counter := 1 }}
+          {{ with . }}
+            {{ range $index, $value := .Images }}
+              <div class="w-full relative">
+                <div class="absolute top-2 right-2">
+                  {{ template "delete_image_form" $value }}
+                </div>
+                <img src="/galleries/{{ $value.GalleryID }}/images/{{ $value.FilenameEscaped }}" alt="{{ $.Title | title }} Image {{ $counter }}" class="w-full">
+              </div>
+              {{ $counter = add $counter 1 }}
+            {{ end }}
           {{ end }}
-        {{ end }}
+        </div>
       </div>
-    </div>
+    {{ end }}
 
     <div class="pt-12">
       <h2 class="font-bold text-xl text-gray-900">Dangerous Actions</h2>
@@ -48,7 +53,7 @@
         </div>
 
         <div class="py-2">
-          <button type="submit" class="py-2 px-8 bg-red-600 hover:bg-red-700 disabled:bg-red-500 disabled:cursor-not-allowed text-white rounded font-bold text-sm">Delete</button>
+          <button type="submit" class="py-2 px-8 bg-red-600 hover:bg-red-700 disabled:bg-red-500 disabled:cursor-not-allowed text-white rounded font-bold text-sm">Delete Gallery</button>
         </div>
       </form>
     </div>
@@ -56,6 +61,16 @@
 </div>
 
 {{ template "footer" . }}
+
+{{ define "delete_image_form" }}
+  <form action="/galleries/{{ .GalleryID }}/images/{{ .FilenameEscaped }}/delete" method="POST" onsubmit="confirmDelete(event, 'image')">
+    <div class="hidden">
+      {{ csrfField }}
+    </div>
+
+    <button type="submit" class="py-1 px-2 bg-red-100 hover:bg-red-200 rounded border border-red-600 text-xs text-red-600">Delete</button>
+  </form>
+{{ end }}
 
 <script>
   // Disable update and delete buttons if error (a gallery not found or user does not have permission error results in the template being executed with ID = 0)
