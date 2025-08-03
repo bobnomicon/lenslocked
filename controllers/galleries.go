@@ -117,7 +117,6 @@ func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 		g.Templates.Edit.Execute(w, r, data, err)
 		return
 	}
-
 	data.ID = gallery.ID
 	data.Title = gallery.Title
 	data.Published = gallery.Published
@@ -367,4 +366,38 @@ func (g Galleries) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/galleries", http.StatusFound)
+}
+
+func (g Galleries) DeleteImage(w http.ResponseWriter, r *http.Request) {
+	type Image struct {
+		GalleryID int
+		Filename string
+		FilenameEscaped string
+	}
+	var data struct {
+		ID int
+		Title string
+		Published bool
+		Images []Image
+	}
+
+	// Get the gallery, check it belongs to user
+	gallery, err := g.galleryByID(w, r, userMustOwnGallery)
+	if err != nil {
+		g.Templates.Edit.Execute(w, r, data, err)
+		return
+	}
+	data.ID = gallery.ID
+	data.Title = gallery.Title
+	data.Published = gallery.Published
+
+	// Delete the image
+	filename := chi.URLParam(r, "filename")
+	err = g.Services.GalleryService.DeleteImage(gallery.ID, filename)
+	if err != nil {
+		g.Templates.Edit.Execute(w, r, data, err)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/galleries/%d/edit", gallery.ID), http.StatusFound)
 }

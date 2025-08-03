@@ -31,7 +31,7 @@ type GalleryService struct {
 
 func hasExtension(file string, extensions ...string) bool {
 	file = strings.ToLower(file)
-	
+
 	for _, ext := range extensions {
 		ext = strings.ToLower(strings.TrimSpace(ext))
 		if filepath.Ext(file) == ext {
@@ -197,4 +197,18 @@ func (gs *GalleryService) Image(galleryID int, filename string) (*Image, error) 
 		Path: imagePath,
 		Filename: filepath.Base(imagePath),
 	}, nil
+}
+
+func (gs *GalleryService) DeleteImage(galleryID int, filename string) error {
+	image, err := gs.Image(galleryID, filename)
+	if err != nil {
+		return fmt.Errorf("delete image: %w", err)
+	}
+
+	err = os.Remove(image.Path)
+	if err != nil {
+		return fmt.Errorf("delete image: %w", err)
+	}
+
+	return nil
 }
