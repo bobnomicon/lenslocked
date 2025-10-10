@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/bobnomicon/lenslocked/controllers"
@@ -15,17 +14,12 @@ import (
 	"github.com/bobnomicon/lenslocked/views"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/gorilla/csrf"
 	"github.com/joho/godotenv"
 )
 
 type config struct {
 	PSQL models.PostgresConfig
 	SMTP email.SMTPConfig
-	CSRF struct {
-		Key string
-		Secure bool
-	}
 	Server struct {
 		Protocol string
 		Address string
@@ -46,17 +40,9 @@ func loadEnvConfig() (config, error) {
 		return cfg, err
 	}
 
-	// Get the bool value of the CSRF_SECURE environment variable, default to true if error
-	csrfSecure, err := strconv.ParseBool(os.Getenv("CSRF_SECURE"))
-	if err != nil {
-		csrfSecure = true
-	}
-
 	// Set config
 	cfg.PSQL = models.DefaultPostgresConfig()
 	cfg.SMTP = email.DefaultSMTPConfig()
-	cfg.CSRF.Key = os.Getenv("CSRF_AUTH_KEY")
-	cfg.CSRF.Secure = csrfSecure
 	cfg.Server.Address = os.Getenv("SERVER_ADDRESS")
 	cfg.Server.Port = os.Getenv("SERVER_PORT")
 	cfg.App.Url = os.Getenv("APP_URL")
@@ -165,14 +151,14 @@ func main() {
 	// Init router
 	r := chi.NewRouter()
 
+	// CSRF Protection
+	csrfProtect := http.NewCrossOriginProtection()
+	csrfProtect.AddTrustedOrigin(cfg.Server.Address)
+	
 	// Global Middlewares
 	r.Use(
 		middleware.Logger,
-		csrf.Protect(
-			[]byte(cfg.CSRF.Key),
-			csrf.Secure(cfg.CSRF.Secure),
-			csrf.Path("/"),
-		),
+		csrfProtect.Handler,
 		userMiddleware.SetUser,
 	)
 
