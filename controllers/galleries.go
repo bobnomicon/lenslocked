@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strconv"
 
 	"github.com/bobnomicon/lenslocked/context"
@@ -84,6 +85,12 @@ func (g Galleries) galleryByID(w http.ResponseWriter, r *http.Request, opts ...g
 	}
 
 	return gallery, nil
+}
+
+// Returns the last element of the filepath
+func (g Galleries) filename(r *http.Request) string {
+	filename := chi.URLParam(r, "filename")
+	return filepath.Base(filename)
 }
 
 
@@ -239,7 +246,7 @@ func (g Galleries) Image(w http.ResponseWriter, r *http.Request) {
 	data.Published = gallery.Published
 
 	// Get the image
-	filename := chi.URLParam(r, "filename")
+	filename := g.filename(r)
 	image, err := g.Services.GalleryService.Image(gallery.ID, filename)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
@@ -392,7 +399,7 @@ func (g Galleries) DeleteImage(w http.ResponseWriter, r *http.Request) {
 	data.Published = gallery.Published
 
 	// Delete the image
-	filename := chi.URLParam(r, "filename")
+	filename := g.filename(r)
 	err = g.Services.GalleryService.DeleteImage(gallery.ID, filename)
 	if err != nil {
 		g.Templates.Edit.Execute(w, r, data, err)
