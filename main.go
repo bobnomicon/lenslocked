@@ -189,7 +189,6 @@ func main() {
 		// Anyone can view a gallery as long as it's published
 		r.Get("/{id}", galleriesController.Show)
 		r.Get("/{id}/images/{filename}", galleriesController.Image)
-		r.Post("/{id}/images/{filename}/delete", galleriesController.DeleteImage)
 
 		// REQUIRE USER
 		r.Group(func(r chi.Router) {
@@ -200,6 +199,8 @@ func main() {
 			r.Get("/{id}/edit", galleriesController.Edit)
 			r.Post("/{id}/edit", galleriesController.Update)
 			r.Post("/{id}/delete", galleriesController.Delete)
+			r.Post("/{id}/images", galleriesController.UploadImage)
+			r.Post("/{id}/images/{filename}/delete", galleriesController.DeleteImage)
 		})
 	})
 

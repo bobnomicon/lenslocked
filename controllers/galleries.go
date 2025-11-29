@@ -375,6 +375,60 @@ func (g Galleries) Delete(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/galleries", http.StatusFound)
 }
 
+func (g Galleries) UploadImage(w http.ResponseWriter, r *http.Request) {
+	type Image struct {
+		GalleryID int
+		Filename string
+		FilenameEscaped string
+	}
+	var data struct {
+		ID int
+		Title string
+		Published bool
+		Images []Image
+	}
+
+	// Get the gallery, check it belongs to user
+	gallery, err := g.galleryByID(w, r, userMustOwnGallery)
+	if err != nil {
+		g.Templates.Edit.Execute(w, r, data, err)
+		return
+	}
+	data.ID = gallery.ID
+	data.Title = gallery.Title
+	data.Published = gallery.Published
+
+	// Parse form fields
+	err = r.ParseMultipartForm(5 << 20) // 5MB
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		g.Templates.Edit.Execute(w, r, data, err)
+		return
+	}
+	
+	// Get the files from the form
+	fileHeaders := r.MultipartForm.File["images"]
+	for _, fileHeader := range fileHeaders {
+		file, err := fileHeader.Open()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			g.Templates.Edit.Execute(w, r, data, err)
+			return
+		}
+		defer file.Close()
+
+		// TODO: Handle unsupported file types
+
+		// Create new image file on the server
+		err = g.Services.GalleryService.CreateImage(gallery.ID, fileHeader.Filename, file)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			g.Templates.Edit.Execute(w, r, data, err)
+			return
+		}
+	}
+}
+
 func (g Galleries) DeleteImage(w http.ResponseWriter, r *http.Request) {
 	type Image struct {
 		GalleryID int
@@ -402,6 +456,7 @@ func (g Galleries) DeleteImage(w http.ResponseWriter, r *http.Request) {
 	filename := g.filename(r)
 	err = g.Services.GalleryService.DeleteImage(gallery.ID, filename)
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		g.Templates.Edit.Execute(w, r, data, err)
 		return
 	}
