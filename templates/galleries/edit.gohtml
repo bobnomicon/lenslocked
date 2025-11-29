@@ -4,6 +4,7 @@
   <div class="w-2/3 px-8 py-8 bg-white rounded shadow">
     <h1 class="pt-4 pb-8 text-center text-3xl font-bold text-gray-900">Edit your gallery</h1>
 
+    <!-- Edit gallery form -->
     <form id="editGallery" action="/galleries/{{.ID}}/edit" method="POST">
       <div class="py-2">
         <label for="title" class="text-sm font-semibold text-gray-800">Gallery Title</label>
@@ -16,10 +17,11 @@
       </div>
 
       <div class="py-2">
-        <button type="submit" class="w-full py-4 px-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-500 disabled:cursor-not-allowed text-white rounded font-bold text-lg">Update</button>
+        <button type="submit" class="py-2 px-8 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-500 disabled:cursor-not-allowed text-white rounded font-bold text-sm">Update</button>
       </div>
     </form>
 
+    <!-- Images -->
     {{ if .Images}}
       <div class="pt-8 pb-2">
         <h2 class="font-bold text-xl text-gray-900">Current Images</h2>
@@ -29,6 +31,7 @@
             {{ range $index, $value := .Images }}
               <div class="w-full relative">
                 <div class="absolute top-2 right-2">
+                  <!-- Render delete image form -->
                   {{ template "delete_image_form" $value }}
                 </div>
                 <img src="/galleries/{{ $value.GalleryID }}/images/{{ $value.FilenameEscaped }}" alt="{{ $.Title | title }} Image {{ $counter }}" class="w-full">
@@ -39,6 +42,23 @@
         </div>
       </div>
     {{ end }}
+
+    <!-- Upload images form -->
+    <div class="py-2">
+      <form action="/galleries/{{.ID}}/images" method="POST" enctype="multipart/form-data">
+        <div class="py-2">
+          <label for="images" class="text-sm font-semibold text-gray-800">
+            Add Images
+            <p class="pb-2 text-xs text-gray-600">Only .jpg, .png, and .gif file types supported.</p>
+          </label>
+          <input id="images" name="images" type="file" accept="image/png, image/jpeg, image/gif" multiple required class="w-full px-3 py-2 border border-gray-300 placeholder-gray-500" />
+        </div>
+
+        <div class="py-2">
+          <button type="submit" class="py-2 px-8 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-500 disabled:cursor-not-allowed text-white rounded font-bold text-sm">Upload</button>
+        </div>
+      </form>
+    </div>
 
     <div class="pt-12">
       <h2 class="font-bold text-xl text-gray-900">Dangerous Actions</h2>
@@ -54,6 +74,7 @@
 
 {{ template "footer" . }}
 
+<!-- Delete image form definition -->
 {{ define "delete_image_form" }}
   <form action="/galleries/{{ .GalleryID }}/images/{{ .FilenameEscaped }}/delete" method="POST" onsubmit="confirmDelete(event, 'image')">
     <button type="submit" class="py-1 px-2 bg-red-100 hover:bg-red-200 rounded border border-red-600 text-xs text-red-600">Delete</button>
