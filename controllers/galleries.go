@@ -406,7 +406,7 @@ func (g Galleries) UploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// Get the files from the form
+	// Get the file(s) from the form
 	fileHeaders := r.MultipartForm.File["images"]
 	for _, fileHeader := range fileHeaders {
 		file, err := fileHeader.Open()
@@ -417,16 +417,23 @@ func (g Galleries) UploadImage(w http.ResponseWriter, r *http.Request) {
 		}
 		defer file.Close()
 
-		// TODO: Handle unsupported file types
-
 		// Create new image file on the server
 		err = g.Services.GalleryService.CreateImage(gallery.ID, fileHeader.Filename, file)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			var fileErr models.FileError
+			if errors.As(err, &fileErr) {
+				w.WriteHeader(http.StatusBadRequest)
+				err = apperrors.Public(ErrInvalidFile, fmt.Sprintf("File '%v' is invalid. Only .jpg, .png, and .gif files supported.", fileHeader.Filename))
+			} else {
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+
 			g.Templates.Edit.Execute(w, r, data, err)
 			return
 		}
 	}
+
+	http.Redirect(w, r, fmt.Sprintf("/galleries/%d/edit", gallery.ID), http.StatusFound)
 }
 
 func (g Galleries) DeleteImage(w http.ResponseWriter, r *http.Request) {

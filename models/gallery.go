@@ -28,6 +28,7 @@ type GalleryService struct {
 	DB *sql.DB
 	ImagesDir string // Directory to store and locate images
 	ImagesExt []string // Supported image file extensions
+	ImagesType []string // Supported image file content types
 }
 
 func hasExtension(file string, extensions ...string) bool {
@@ -66,6 +67,20 @@ func (gs *GalleryService) supportedExt() []string {
 	}
 
 	return imagesExt
+}
+
+// Gets the supported image file contentTypes on the gallery service if set, otherwise uses defaults.
+func (gs *GalleryService) supportedType() []string {
+	imagesType := gs.ImagesType
+	if imagesType == nil {
+		imagesType = []string{
+			"image/png",
+			"image/jpeg",
+			"image/gif",
+		}
+	}
+
+	return imagesType
 }
 
 func (gs *GalleryService) Create(title string, userID int) (*Gallery, error) {
@@ -200,10 +215,20 @@ func (gs *GalleryService) Image(galleryID int, filename string) (*Image, error) 
 	}, nil
 }
 
-func (gs *GalleryService) CreateImage(galleryID int, filename string, contents io.Reader) error {
+func (gs *GalleryService) CreateImage(galleryID int, filename string, contents io.ReadSeeker) error {
+	// Check file content type and extension is valid
+	err := checkContentType(contents, gs.supportedType())
+	if err != nil {
+		return fmt.Errorf("create image %v: %w", filename, err)
+	}
+	err = checkExtension(filename, gs.supportedExt())
+	if err != nil {
+		return fmt.Errorf("create image %v: %w", filename, err)
+	}
+
 	// Create gallery images directory
 	galleryDir := gs.galleryDir(galleryID)
-	err := os.MkdirAll(galleryDir, 0755)
+	err = os.MkdirAll(galleryDir, 0755)
 	if err != nil {
 		return fmt.Errorf("create gallery-%d images directory: %w", galleryID, err)
 	}
@@ -212,7 +237,7 @@ func (gs *GalleryService) CreateImage(galleryID int, filename string, contents i
 	imagePath := filepath.Join(galleryDir, filename)
 	dst, err := os.Create(imagePath)
 	if err != nil {
-		return fmt.Errorf("create Image file: %w", err)
+		return fmt.Errorf("create image file: %w", err)
 	}
 	defer dst.Close()
 
