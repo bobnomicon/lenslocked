@@ -188,7 +188,7 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 
 	// Set cookie with session token
   setCookie(w, CookieSession, session.Token)
-	http.Redirect(w, r, "/users/me", http.StatusFound)
+	http.Redirect(w, r, "/galleries", http.StatusFound)
 }
 
 func (u Users) Authenticate(w http.ResponseWriter, r *http.Request) {
@@ -378,5 +378,5 @@ func (u Users) ProcessResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	// Set cookie with session token
   setCookie(w, CookieSession, session.Token)
-	http.Redirect(w, r, "/users/me", http.StatusFound)
+	http.Redirect(w, r, "/galleries", http.StatusFound)
 }
