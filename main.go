@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
+	"strings"
 
 	"github.com/bobnomicon/lenslocked/controllers"
 	"github.com/bobnomicon/lenslocked/email"
@@ -14,17 +14,12 @@ import (
 	"github.com/bobnomicon/lenslocked/views"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/gorilla/csrf"
 	"github.com/joho/godotenv"
 )
 
 type config struct {
 	PSQL models.PostgresConfig
 	SMTP email.SMTPConfig
-	CSRF struct {
-		Key string
-		Secure bool
-	}
 	Server struct {
 		Protocol string
 		Address string
@@ -32,6 +27,8 @@ type config struct {
 	}
 	App struct {
 		Url string
+		ImagesDir string
+		ImagesExt string
 	}
 }
 
@@ -43,20 +40,14 @@ func loadEnvConfig() (config, error) {
 		return cfg, err
 	}
 
-	// Get the bool value of the CSRF_SECURE environment variable, default to true if error
-	csrfSecure, err := strconv.ParseBool(os.Getenv("CSRF_SECURE"))
-	if err != nil {
-		csrfSecure = true
-	}
-
 	// Set config
 	cfg.PSQL = models.DefaultPostgresConfig()
 	cfg.SMTP = email.DefaultSMTPConfig()
-	cfg.CSRF.Key = os.Getenv("CSRF_AUTH_KEY")
-	cfg.CSRF.Secure = csrfSecure
 	cfg.Server.Address = os.Getenv("SERVER_ADDRESS")
 	cfg.Server.Port = os.Getenv("SERVER_PORT")
 	cfg.App.Url = os.Getenv("APP_URL")
+	cfg.App.ImagesDir = os.Getenv("APP_IMAGES_DIR")
+	cfg.App.ImagesExt = os.Getenv("APP_IMAGES_EXT")
 
 	return cfg, nil
 }
@@ -90,7 +81,11 @@ func main() {
 	userService := &models.UserService{DB: db}
 	sessionService := &models.SessionService{DB: db}
 	passwordResetService := &models.PasswordResetService{DB: db}
-	galleryService := &models.GalleryService{DB: db}
+	galleryService := &models.GalleryService{
+		DB: db,
+		ImagesDir: cfg.App.ImagesDir,
+		ImagesExt: strings.Split(cfg.App.ImagesExt, ","),
+	}
 	emailService := email.NewEmailService(cfg.SMTP)
 
 	var usersController controllers.Users
@@ -156,14 +151,14 @@ func main() {
 	// Init router
 	r := chi.NewRouter()
 
+	// CSRF Protection
+	csrfProtect := http.NewCrossOriginProtection()
+	csrfProtect.AddTrustedOrigin(cfg.Server.Address)
+	
 	// Global Middlewares
 	r.Use(
 		middleware.Logger,
-		csrf.Protect(
-			[]byte(cfg.CSRF.Key),
-			csrf.Secure(cfg.CSRF.Secure),
-			csrf.Path("/"),
-		),
+		csrfProtect.Handler,
 		userMiddleware.SetUser,
 	)
 
@@ -191,16 +186,21 @@ func main() {
 
 	// Galleries routes
 	r.Route("/galleries", func(r chi.Router) {
+		// Anyone can view a gallery as long as it's published
+		r.Get("/{id}", galleriesController.Show)
+		r.Get("/{id}/images/{filename}", galleriesController.Image)
+
 		// REQUIRE USER
 		r.Group(func(r chi.Router) {
 			r.Use(userMiddleware.RequireUser)
 			r.Get("/", galleriesController.Index)
 			r.Get("/new", galleriesController.New)
 			r.Post("/new", galleriesController.Create)
-			r.Get("/{id}", galleriesController.Show)
 			r.Get("/{id}/edit", galleriesController.Edit)
 			r.Post("/{id}/edit", galleriesController.Update)
 			r.Post("/{id}/delete", galleriesController.Delete)
+			r.Post("/{id}/images", galleriesController.UploadImage)
+			r.Post("/{id}/images/{filename}/delete", galleriesController.DeleteImage)
 		})
 	})
 

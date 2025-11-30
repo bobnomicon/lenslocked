@@ -3,8 +3,9 @@ package controllers
 import (
 	"errors"
 	"fmt"
-	"math/rand"
 	"net/http"
+	"net/url"
+	"path/filepath"
 	"strconv"
 
 	"github.com/bobnomicon/lenslocked/context"
@@ -43,11 +44,12 @@ func userMustOwnGallery(w http.ResponseWriter, r *http.Request, gallery *models.
 
 // Checks if gallery is published, and if not owned by user, writes a 404 Not Found status code and appropriate error message for the response.
 func galleryMustBePublished(w http.ResponseWriter, r *http.Request, gallery *models.Gallery) error {
-	user := context.User(r.Context())
-	if gallery.UserID != user.ID && !gallery.Published {
-		w.WriteHeader(http.StatusNotFound)
-		return apperrors.Public(ErrUnauthorized, "Gallery not found.")
-
+	if !gallery.Published {
+		user := context.User(r.Context())
+		if user == nil || user.ID != gallery.UserID {
+			w.WriteHeader(http.StatusNotFound)
+			return apperrors.Public(ErrUnauthorized, "Gallery not found.")
+		}
 	}
 
 	return nil
@@ -85,6 +87,12 @@ func (g Galleries) galleryByID(w http.ResponseWriter, r *http.Request, opts ...g
 	return gallery, nil
 }
 
+// Returns the last element of the filepath
+func (g Galleries) filename(r *http.Request) string {
+	filename := chi.URLParam(r, "filename")
+	return filepath.Base(filename)
+}
+
 
 /******** GET handlers ********/
 
@@ -98,10 +106,16 @@ func (g Galleries) New(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
+	type Image struct {
+		GalleryID int
+		Filename string
+		FilenameEscaped string
+	}
 	var data struct {
 		ID int
 		Title string
 		Published bool
+		Images []Image
 	}
 
 	// Get the gallery, check it belongs to user
@@ -110,10 +124,25 @@ func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 		g.Templates.Edit.Execute(w, r, data, err)
 		return
 	}
-
 	data.ID = gallery.ID
 	data.Title = gallery.Title
 	data.Published = gallery.Published
+
+	images, err := g.Services.GalleryService.Images(gallery.ID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		g.Templates.Edit.Execute(w, r, data, err)
+		return
+	}
+
+	for _, image := range images {
+		data.Images = append(data.Images, Image{
+			GalleryID: image.GalleryID,
+			Filename: image.Filename,
+			FilenameEscaped: url.PathEscape(image.Filename),
+		})
+	}
+
 	g.Templates.Edit.Execute(w, r, data)
 }
 
@@ -154,11 +183,16 @@ func (g Galleries) Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
+	type Image struct {
+		GalleryID int
+		Filename string
+		FilenameEscaped string
+	}
 	var data struct {
 		ID int
 		Title string
 		Published bool
-		Images []string
+		Images []Image
 	}
 
 	// Get the gallery, check it is published or belongs to user
@@ -171,16 +205,64 @@ func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
 	data.Title = gallery.Title
 	data.Published = gallery.Published
 
-	// TODO: Get gallery images. For now pseudo-randomly get 20 images from placecats.com until implement image uploads.
-	for range 20 {
-		// Width and height are random values between 200 and 700
-		w, h := rand.Intn(500) + 200, rand.Intn(500) + 200
-		// Generate URL from width and height
-		catImageURL := fmt.Sprintf("https://placecats.com/%d/%d", w, h)
-		data.Images = append(data.Images, catImageURL)
+	images, err := g.Services.GalleryService.Images(gallery.ID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		g.Templates.Show.Execute(w, r, data, err)
+		return
+	}
+	
+	for _, image := range images {
+		data.Images = append(data.Images, Image{
+			GalleryID: image.GalleryID,
+			Filename: image.Filename,
+			FilenameEscaped: url.PathEscape(image.Filename),
+		})
 	}
 
 	g.Templates.Show.Execute(w, r, data)
+}
+
+func (g Galleries) Image(w http.ResponseWriter, r *http.Request) {
+	type Image struct {
+		GalleryID int
+		Filename string
+	}
+	var data struct {
+		ID int
+		Title string
+		Published bool
+		Images []Image
+	}
+
+	// Get the gallery, check it is published or belongs to user
+	gallery, err := g.galleryByID(w, r, galleryMustBePublished)
+	if err != nil {
+		g.Templates.Show.Execute(w, r, data, err)
+		return
+	}
+	data.ID = gallery.ID
+	data.Title = gallery.Title
+	data.Published = gallery.Published
+
+	// Get the image
+	filename := g.filename(r)
+	image, err := g.Services.GalleryService.Image(gallery.ID, filename)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			// Image does not exist
+			w.WriteHeader(http.StatusNotFound)
+			err = apperrors.Public(err, "Image not found.")
+		} else {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		g.Templates.Show.Execute(w, r, data, err)
+		return
+	}
+
+	http.ServeFile(w, r, image.Path)
 }
 
 
@@ -291,4 +373,100 @@ func (g Galleries) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/galleries", http.StatusFound)
+}
+
+func (g Galleries) UploadImage(w http.ResponseWriter, r *http.Request) {
+	type Image struct {
+		GalleryID int
+		Filename string
+		FilenameEscaped string
+	}
+	var data struct {
+		ID int
+		Title string
+		Published bool
+		Images []Image
+	}
+
+	// Get the gallery, check it belongs to user
+	gallery, err := g.galleryByID(w, r, userMustOwnGallery)
+	if err != nil {
+		g.Templates.Edit.Execute(w, r, data, err)
+		return
+	}
+	data.ID = gallery.ID
+	data.Title = gallery.Title
+	data.Published = gallery.Published
+
+	// Parse form fields
+	err = r.ParseMultipartForm(5 << 20) // 5MB
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		g.Templates.Edit.Execute(w, r, data, err)
+		return
+	}
+	
+	// Get the file(s) from the form
+	fileHeaders := r.MultipartForm.File["images"]
+	for _, fileHeader := range fileHeaders {
+		file, err := fileHeader.Open()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			g.Templates.Edit.Execute(w, r, data, err)
+			return
+		}
+		defer file.Close()
+
+		// Create new image file on the server
+		err = g.Services.GalleryService.CreateImage(gallery.ID, fileHeader.Filename, file)
+		if err != nil {
+			var fileErr models.FileError
+			if errors.As(err, &fileErr) {
+				w.WriteHeader(http.StatusBadRequest)
+				err = apperrors.Public(ErrInvalidFile, fmt.Sprintf("File '%v' is invalid. Only .jpg, .png, and .gif files supported.", fileHeader.Filename))
+			} else {
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+
+			g.Templates.Edit.Execute(w, r, data, err)
+			return
+		}
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/galleries/%d/edit", gallery.ID), http.StatusFound)
+}
+
+func (g Galleries) DeleteImage(w http.ResponseWriter, r *http.Request) {
+	type Image struct {
+		GalleryID int
+		Filename string
+		FilenameEscaped string
+	}
+	var data struct {
+		ID int
+		Title string
+		Published bool
+		Images []Image
+	}
+
+	// Get the gallery, check it belongs to user
+	gallery, err := g.galleryByID(w, r, userMustOwnGallery)
+	if err != nil {
+		g.Templates.Edit.Execute(w, r, data, err)
+		return
+	}
+	data.ID = gallery.ID
+	data.Title = gallery.Title
+	data.Published = gallery.Published
+
+	// Delete the image
+	filename := g.filename(r)
+	err = g.Services.GalleryService.DeleteImage(gallery.ID, filename)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		g.Templates.Edit.Execute(w, r, data, err)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/galleries/%d/edit", gallery.ID), http.StatusFound)
 }
