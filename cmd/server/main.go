@@ -29,6 +29,7 @@ type config struct {
 		Url string
 		ImagesDir string
 		ImagesExt string
+		ImagesType string
 	}
 }
 
@@ -48,6 +49,7 @@ func loadEnvConfig() (config, error) {
 	cfg.App.Url = os.Getenv("APP_URL")
 	cfg.App.ImagesDir = os.Getenv("APP_IMAGES_DIR")
 	cfg.App.ImagesExt = os.Getenv("APP_IMAGES_EXT")
+	cfg.App.ImagesType = os.Getenv("APP_IMAGES_TYPE")
 
 	return cfg, nil
 }
@@ -85,6 +87,7 @@ func main() {
 		DB: db,
 		ImagesDir: cfg.App.ImagesDir,
 		ImagesExt: strings.Split(cfg.App.ImagesExt, ","),
+		ImagesType: strings.Split(cfg.App.ImagesType, ","),
 	}
 	emailService := email.NewEmailService(cfg.SMTP)
 
