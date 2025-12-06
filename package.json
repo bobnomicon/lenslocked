@@ -1,0 +1,12 @@
+{
+  "name": "lenslocked",
+  "private": true,
+  "scripts": {
+    "dev": "tailwindcss -i ./tailwind.css -o ./assets/styles.css --watch",
+    "build": "tailwindcss -i ./tailwind.css -o ./assets/styles.css --minify"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.17",
+    "tailwindcss": "^4.1.17"
+  }
+}
