@@ -1,1 +1,5 @@
 @import "tailwindcss" source("./templates/**/*.{gohtml,html}");
+
+button {
+  @apply cursor-pointer;
+}
