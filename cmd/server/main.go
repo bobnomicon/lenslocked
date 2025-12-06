@@ -165,6 +165,9 @@ func main() {
 		userMiddleware.SetUser,
 	)
 
+	// Static assets
+	r.Get("/assets/*", controllers.AssetsHandler(http.Dir("assets")))
+
 	// Static routes
 	r.Get("/", controllers.StaticHandler(homeTemplate))
 	r.Get("/contact", controllers.StaticHandler(contactTemplate))	
