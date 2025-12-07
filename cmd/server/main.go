@@ -33,6 +33,17 @@ type config struct {
 	}
 }
 
+type server struct {
+	Controllers struct {
+		Static *controllers.Static
+		Users *controllers.Users
+		Galleries *controllers.Galleries
+	}
+	Middleware struct {
+		Users *controllers.UserMiddleware
+	}
+}
+
 func loadEnvConfig() (config, error) {
 	var cfg config
 
@@ -54,29 +65,122 @@ func loadEnvConfig() (config, error) {
 	return cfg, nil
 }
 
-func main() {
-	// Load env config
-	cfg, err := loadEnvConfig()
-	if err != nil {
-		panic(err)
-	}
+func parseTemplates(s *server) {
+	// Parse static templates
+	s.Controllers.Static.Templates.Home = views.Must(views.ParseFS(templates.FS,
+		"home.gohtml", "layout.gohtml",
+	))
+	s.Controllers.Static.Templates.Contact = views.Must(views.ParseFS(templates.FS,
+		"contact.gohtml", "layout.gohtml",
+	))
+	s.Controllers.Static.Templates.FAQ = views.Must(views.ParseFS(templates.FS,
+		"faq.gohtml", "layout.gohtml",
+	))
 
+	// Parse users templates
+	s.Controllers.Users.Templates.SignUp = views.Must(views.ParseFS(templates.FS,
+		"signup.gohtml", "layout.gohtml",
+	))
+	s.Controllers.Users.Templates.SignIn = views.Must(views.ParseFS(templates.FS,
+		"signin.gohtml", "layout.gohtml",
+	))
+	s.Controllers.Users.Templates.ForgotPassword = views.Must(views.ParseFS(templates.FS,
+		"forgot-password.gohtml", "layout.gohtml",
+	))
+	s.Controllers.Users.Templates.CheckEmail = views.Must(views.ParseFS(templates.FS,
+		"check-email.gohtml", "layout.gohtml",
+	))
+	s.Controllers.Users.Templates.ResetPassword = views.Must(views.ParseFS(templates.FS,
+		"reset-password.gohtml", "layout.gohtml",
+	))
+	s.Controllers.Users.Templates.ForgotPasswordEmail = email.Must(email.ParseFS(templates.FS,
+		"emails/forgot-password.gohtml",
+	))
+
+	// Parse galleries templates
+	s.Controllers.Galleries.Templates.New = views.Must(views.ParseFS(templates.FS,
+		"galleries/new.gohtml", "layout.gohtml",
+	))
+	s.Controllers.Galleries.Templates.Edit = views.Must(views.ParseFS(templates.FS,
+		"galleries/edit.gohtml", "layout.gohtml",
+	))
+	s.Controllers.Galleries.Templates.Index = views.Must(views.ParseFS(templates.FS,
+		"galleries/index.gohtml", "layout.gohtml",
+	))
+	s.Controllers.Galleries.Templates.Show = views.Must(views.ParseFS(templates.FS,
+		"galleries/show.gohtml", "layout.gohtml",
+	))
+}
+
+func routes(r *chi.Mux, s *server) {
+	// Static assets
+	r.Get("/assets/*", controllers.AssetsHandler(http.Dir("assets")))
+
+	// Static routes
+	r.Get("/", controllers.StaticHandler(s.Controllers.Static.Templates.Home))
+	r.Get("/contact", controllers.StaticHandler(s.Controllers.Static.Templates.Contact))	
+	r.Get("/faq", controllers.FAQ(s.Controllers.Static.Templates.FAQ))
+
+	// Users routes
+	r.Get("/forgot-password", s.Controllers.Users.ForgotPassword)
+	r.Post("/forgot-password", s.Controllers.Users.ProcessForgotPassword)
+	r.Get("/reset-password", s.Controllers.Users.ResetPassword)
+	r.Post("/reset-password", s.Controllers.Users.ProcessResetPassword)
+	r.Get("/signin", s.Controllers.Users.SignIn)
+	r.Post("/signin", s.Controllers.Users.Authenticate)
+	r.Post("/signout", s.Controllers.Users.SignOut)
+	r.Get("/signup", s.Controllers.Users.SignUp)
+	r.Post("/signup", s.Controllers.Users.Create)
+
+	// Users routes - REQUIRE USER
+	r.Route("/users/me", func(r chi.Router) {
+		r.Use(s.Middleware.Users.RequireUser)
+		r.Get("/", s.Controllers.Users.CurrentUser)
+	})
+
+	// Galleries routes
+	r.Route("/galleries", func(r chi.Router) {
+		// Anyone can view a gallery as long as it's published
+		r.Get("/{id}", s.Controllers.Galleries.Show)
+		r.Get("/{id}/images/{filename}", s.Controllers.Galleries.Image)
+
+		// REQUIRE USER
+		r.Group(func(r chi.Router) {
+			r.Use(s.Middleware.Users.RequireUser)
+			r.Get("/", s.Controllers.Galleries.Index)
+			r.Get("/new", s.Controllers.Galleries.New)
+			r.Post("/new", s.Controllers.Galleries.Create)
+			r.Get("/{id}/edit", s.Controllers.Galleries.Edit)
+			r.Post("/{id}/edit", s.Controllers.Galleries.Update)
+			r.Post("/{id}/delete", s.Controllers.Galleries.Delete)
+			r.Post("/{id}/images", s.Controllers.Galleries.UploadImage)
+			r.Post("/{id}/images/{filename}/delete", s.Controllers.Galleries.DeleteImage)
+		})
+	})
+
+	// 404 route
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "Page not found", http.StatusNotFound)
+	})
+}
+
+func run(cfg config) error {
 	// Open DB connection	
 	db, err := models.Open(cfg.PSQL)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer db.Close()
 
 	// Verify DB connection
 	if err = db.Ping(); err != nil {
-		panic(err)
+		return err
 	}
 	fmt.Println("Database connected")
 
 	// Run migrations
 	if err = models.MigrateFS(db, migrations.FS, "."); err != nil {
-		panic(err)
+		return err
 	}
 
 	// Init services
@@ -91,64 +195,30 @@ func main() {
 	}
 	emailService := email.NewEmailService(cfg.SMTP)
 
+	// Init controllers
+	var staticController controllers.Static
 	var usersController controllers.Users
+	var galleriesController controllers.Galleries
 	usersController.Services.UserService = userService
 	usersController.Services.SessionService = sessionService
 	usersController.Services.PasswordResetService = passwordResetService
 	usersController.Services.EmailService = emailService
+	galleriesController.Services.GalleryService = galleryService
 
+	// Init middleware
 	userMiddleware := controllers.UserMiddleware{
 		SessionService: sessionService,
 	}
 
-	var galleriesController controllers.Galleries
-	galleriesController.Services.GalleryService = galleryService
+	// Init server
+	var server server
+	server.Controllers.Static = &staticController
+	server.Controllers.Users = &usersController
+	server.Controllers.Galleries = &galleriesController
+	server.Middleware.Users = &userMiddleware
 
-	// Parse static templates
-	homeTemplate := views.Must(views.ParseFS(templates.FS,
-		"home.gohtml", "layout.gohtml",
-	))
-	contactTemplate := views.Must(views.ParseFS(templates.FS,
-		"contact.gohtml", "layout.gohtml",
-	))
-	faqTemplate := views.Must(views.ParseFS(templates.FS,
-		"faq.gohtml", "layout.gohtml",
-	))
-
-	// Parse users templates
-	usersController.Templates.SignUp = views.Must(views.ParseFS(templates.FS,
-		"signup.gohtml", "layout.gohtml",
-	))
-	usersController.Templates.SignIn = views.Must(views.ParseFS(templates.FS,
-		"signin.gohtml", "layout.gohtml",
-	))
-	usersController.Templates.ForgotPassword = views.Must(views.ParseFS(templates.FS,
-		"forgot-password.gohtml", "layout.gohtml",
-	))
-	usersController.Templates.CheckEmail = views.Must(views.ParseFS(templates.FS,
-		"check-email.gohtml", "layout.gohtml",
-	))
-	usersController.Templates.ResetPassword = views.Must(views.ParseFS(templates.FS,
-		"reset-password.gohtml", "layout.gohtml",
-	))
-	usersController.Templates.ForgotPasswordEmail = email.Must(email.ParseFS(templates.FS,
-		"emails/forgot-password.gohtml",
-	))
-
-	// Parse galleries templates
-	galleriesController.Templates.New = views.Must(views.ParseFS(templates.FS,
-		"galleries/new.gohtml", "layout.gohtml",
-	))
-	galleriesController.Templates.Edit = views.Must(views.ParseFS(templates.FS,
-		"galleries/edit.gohtml", "layout.gohtml",
-	))
-	galleriesController.Templates.Index = views.Must(views.ParseFS(templates.FS,
-		"galleries/index.gohtml", "layout.gohtml",
-	))
-	galleriesController.Templates.Show = views.Must(views.ParseFS(templates.FS,
-		"galleries/show.gohtml", "layout.gohtml",
-	))
-
+	// Parse templates
+	parseTemplates(&server)
 	fmt.Println("Done parsing templates")
 
 	// Init router
@@ -158,67 +228,31 @@ func main() {
 	csrfProtect := http.NewCrossOriginProtection()
 	csrfProtect.AddTrustedOrigin(cfg.Server.Address)
 	
-	// Global Middlewares
+	// Global Middleware
 	r.Use(
 		middleware.Logger,
 		csrfProtect.Handler,
-		userMiddleware.SetUser,
+		server.Middleware.Users.SetUser,
 	)
 
-	// Static assets
-	r.Get("/assets/*", controllers.AssetsHandler(http.Dir("assets")))
-
-	// Static routes
-	r.Get("/", controllers.StaticHandler(homeTemplate))
-	r.Get("/contact", controllers.StaticHandler(contactTemplate))	
-	r.Get("/faq", controllers.FAQ(faqTemplate))
-
-	// Users routes
-	r.Get("/forgot-password", usersController.ForgotPassword)
-	r.Post("/forgot-password", usersController.ProcessForgotPassword)
-	r.Get("/reset-password", usersController.ResetPassword)
-	r.Post("/reset-password", usersController.ProcessResetPassword)
-	r.Get("/signin", usersController.SignIn)
-	r.Post("/signin", usersController.Authenticate)
-	r.Post("/signout", usersController.SignOut)
-	r.Get("/signup", usersController.SignUp)
-	r.Post("/signup", usersController.Create)
-
-	// Users routes - REQUIRE USER
-	r.Route("/users/me", func(r chi.Router) {
-		r.Use(userMiddleware.RequireUser)
-		r.Get("/", usersController.CurrentUser)
-	})
-
-	// Galleries routes
-	r.Route("/galleries", func(r chi.Router) {
-		// Anyone can view a gallery as long as it's published
-		r.Get("/{id}", galleriesController.Show)
-		r.Get("/{id}/images/{filename}", galleriesController.Image)
-
-		// REQUIRE USER
-		r.Group(func(r chi.Router) {
-			r.Use(userMiddleware.RequireUser)
-			r.Get("/", galleriesController.Index)
-			r.Get("/new", galleriesController.New)
-			r.Post("/new", galleriesController.Create)
-			r.Get("/{id}/edit", galleriesController.Edit)
-			r.Post("/{id}/edit", galleriesController.Update)
-			r.Post("/{id}/delete", galleriesController.Delete)
-			r.Post("/{id}/images", galleriesController.UploadImage)
-			r.Post("/{id}/images/{filename}/delete", galleriesController.DeleteImage)
-		})
-	})
-
-	// 404 route
-	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "Page not found", http.StatusNotFound)
-	})
+	// Init routes
+	routes(r, &server)
 
 	// Start HTTP server and listen on specified port
 	fmt.Printf("Starting the server on port %s...\n", cfg.Server.Port)
 	addr := cfg.Server.Address + ":" + cfg.Server.Port
-	if err = http.ListenAndServe(addr, r); err != nil {
+	return http.ListenAndServe(addr, r)
+}
+
+func main() {
+	// Load env config
+	cfg, err := loadEnvConfig()
+	if err != nil {
+		panic(err)
+	}
+
+	// Run the server
+	if err = run(cfg); err != nil {
 		panic(err)
 	}
 }
