@@ -1,0 +1,14 @@
+# docker-compose.production.yml production configuration, uses the base configuration in docker-compose.yml
+
+services:
+  server:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: always
+    volumes:
+      - ./images:/app/images
+    ports:
+      - ${SERVER_PORT}:3000
+    depends_on:
+      - postgres

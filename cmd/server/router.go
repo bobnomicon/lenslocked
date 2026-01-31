@@ -60,6 +60,7 @@ func routes(r *chi.Mux, s *server) {
 	})
 }
 
+// Initializes the router, global middleware, and routes
 func router(s *server, cfg config) http.Handler {
 	// Init router
 	r := chi.NewRouter()
