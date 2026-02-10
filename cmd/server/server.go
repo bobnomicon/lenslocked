@@ -43,10 +43,8 @@ type server struct {
 func loadEnvConfig() (config, error) {
 	var cfg config
 
-	// Load .env
-	if err := godotenv.Load(); err != nil {
-		return cfg, err
-	}
+	// Load .env (optional - ignore error if env vars already set)
+	_ = godotenv.Load()
 
 	// Set config
 	cfg.PSQL = models.DefaultPostgresConfig()

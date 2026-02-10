@@ -6,8 +6,9 @@ services:
       context: ./
       dockerfile: Dockerfile
     restart: always
+    env_file: .env
     volumes:
-      - ./images:/app/images
+      - ${IMAGES_VOLUME}:/${APP_IMAGES_DIR}
     ports:
       - ${SERVER_PORT}:3000
     depends_on:
