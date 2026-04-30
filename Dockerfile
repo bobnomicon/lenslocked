@@ -1,3 +1,11 @@
+FROM node:latest AS tailwind-builder
+WORKDIR /
+COPY ./package-lock.json ./package-lock.json
+COPY ./tailwind.css ./assets/styles.css
+COPY ./templates ./templates
+RUN npm ci
+RUN npm run build
+
 FROM golang:1.26 AS builder
 WORKDIR /app
 COPY go.mod go.sum ./

@@ -248,6 +248,9 @@ goose-psql
 images/
 app/images/
 
+# Built assets
+assets/
+
 # Modd
 modd.conf
 
