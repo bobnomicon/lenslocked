@@ -1,5 +1,6 @@
 FROM node:latest AS tailwind-builder
 WORKDIR /tailwind
+COPY ./package.json ./package.json
 COPY ./package-lock.json ./package-lock.json
 COPY ./tailwind.css ./tailwind.css
 COPY ./templates ./templates
