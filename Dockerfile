@@ -1,7 +1,7 @@
 FROM node:latest AS tailwind-builder
-WORKDIR /
+WORKDIR /tailwind
 COPY ./package-lock.json ./package-lock.json
-COPY ./tailwind.css ./assets/styles.css
+COPY ./tailwind.css ./tailwind.css
 COPY ./templates ./templates
 RUN npm ci
 RUN npm run build
@@ -15,7 +15,7 @@ RUN go build -v -o ./server ./cmd/server
 
 FROM ubuntu:latest
 WORKDIR /
-COPY ./assets ./assets
+COPY --from=tailwind-builder /tailwind/assets ./assets
 COPY --from=builder /app/server ./server
 
 CMD [ "./server" ]
