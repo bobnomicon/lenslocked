@@ -252,3 +252,4 @@ modd.conf
 
 # IDEs
 .vscode
+.zed
