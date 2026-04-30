@@ -1,9 +1,25 @@
 package controllers
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
 )
+
+type Static struct {
+	Templates struct {
+		Home Template
+		Contact Template
+		FAQ Template
+	}
+}
+
+func AssetsHandler(fs http.FileSystem) http.HandlerFunc {
+	return http.StripPrefix(
+		fmt.Sprintf("/%s", fs),
+		http.FileServer(fs),
+	).ServeHTTP
+}
 
 func StaticHandler(tpl Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

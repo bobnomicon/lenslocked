@@ -3,7 +3,7 @@
 <div class="page">
   <h1 class="w-full py-8 text-4xl semibold tacking-light">My Galleries</h1>
 
-  <table class="w-full table-fixed">
+  <table class="w-full table-fixed border-separate border-spacing-0 border-0">
     <thead>
       <tr>
         <th class="p-2 text-left w-24">ID</th>
@@ -28,17 +28,17 @@
 {{ template "footer" . }}
 
 {{ define "gallery" }}
-  <tr class="border">
-    <td class="p-2 border">{{ .ID }}</td>
-    <td class="p-2 border">{{ .Title }}</td>
-    <td class="p-2 border">
+  <tr>
+    <td class="p-2 border border-gray-300">{{ .ID }}</td>
+    <td class="p-2 border border-l-0 border-gray-300">{{ .Title }}</td>
+    <td class="p-2 border border-l-0 border-gray-300">
       {{ if .Published }}
         <span class="py-1 px-2 text-sm text-green-600">Yes</span>
       {{ else }}
         <span class="py-1 px-2 text-sm text-red-600">No</span>
       {{ end }}
     </td>
-    <td class="p-2 border flex space-x-2">
+    <td class="p-2 border border-l-0 border-gray-300 flex space-x-2">
       <a href="/galleries/{{.ID}}" class="py-1 px-2 bg-blue-100 hover:bg-blue-200 rounded border border-blue-600 text-xs text-blue-600">View</a>
 
       <a href="/galleries/{{.ID}}/edit" class="py-1 px-2 bg-yellow-100 hover:bg-yellow-200 rounded border border-yellow-600 text-xs text-yellow-600">Edit</a>

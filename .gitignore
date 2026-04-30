@@ -246,9 +246,14 @@ goose-psql
 
 # Image uploads
 images/
+app/images/
+
+# Built assets
+assets/
 
 # Modd
 modd.conf
 
 # IDEs
 .vscode
+.zed

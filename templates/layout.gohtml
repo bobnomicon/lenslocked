@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/assets/styles.css" />
     <style>
       body {
         min-height: 100vh;
@@ -17,7 +17,7 @@
   </head>
 
   <body class="bg-gray-100">
-    <header class="bg-gradient-to-r from-blue-800 to-indigo-800 text-white">
+    <header class="bg-linear-to-r from-blue-800 to-indigo-800 text-white">
       <nav class="px-8 py-6 flex items-center space-x-12">
         <div class="text-4xl font-serif">Lenslocked</div>
 
@@ -28,17 +28,17 @@
         </div>
 
         {{ if currentUser }}
-          <div class="flex-grow flex flex-row-reverse">
+          <div class="grow flex flex-row-reverse">
             <a href="/galleries" class="text-lg font-semibold hover:text-blue-100 pr-8">My Galleries</a>
           </div>
         {{ else }}
-          <div class="flex-grow"></div>
+          <div class="grow"></div>
         {{ end }}
 
         <div class="space-x-4">
           {{ if currentUser }}
             <form action="/signout" method="post" class="inline pr-4">
-              <button type="submit">Sign Out</button>
+              <button type="submit" class="hover:text-blue-100">Sign Out</button>
             </form>
           {{ else }}
             <a href="/signin" class="pr-4">Sign In</a>
@@ -53,7 +53,7 @@
       <div class="alert-container pt-8 px-8">
         {{ range errors }}
           <div class="alert-message flex bg-red-100 rounded px-2 py-2 text-red-800 mb-2">
-            <div class="flex-grow">{{ . }}</div>
+            <div class="grow">{{ . }}</div>
             <a href="#" onclick="closeAlert(event)" aria-label="Close alert">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -68,7 +68,7 @@
 <!-- Page content -->
 
 {{ define "footer" }}
-    <footer class="w-full flex justify-center items-center bg-gradient-to-r from-blue-800 to-indigo-800 text-white h-14">
+    <footer class="w-full flex justify-center items-center bg-linear-to-r from-blue-800 to-indigo-800 text-white h-14">
       <div>&copy; <span id="copyright">2025</span> Lenslocked</div>
     </footer>
   </body>

@@ -1,0 +1,25 @@
+# docker-compose.production.yml production configuration, uses the base configuration in docker-compose.yml
+
+services:
+  server:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: always
+    env_file: .env
+    volumes:
+      - ./${APP_IMAGES_DIR}:/${APP_IMAGES_DIR}
+    depends_on:
+      - postgres
+
+  caddy:
+    image: caddy
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+      # - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    depends_on:
+      - server
