@@ -14,7 +14,7 @@ func routes(r *chi.Mux, s *server) {
 
 	// Static routes
 	r.Get("/", controllers.StaticHandler(s.Controllers.Static.Templates.Home))
-	r.Get("/contact", controllers.StaticHandler(s.Controllers.Static.Templates.Contact))	
+	r.Get("/contact", controllers.StaticHandler(s.Controllers.Static.Templates.Contact))
 	r.Get("/faq", controllers.FAQ(s.Controllers.Static.Templates.FAQ))
 
 	// Users routes
@@ -67,8 +67,8 @@ func router(s *server, cfg config) http.Handler {
 
 	// CSRF Protection
 	csrfProtect := http.NewCrossOriginProtection()
-	csrfProtect.AddTrustedOrigin(cfg.Server.Address)
-	
+	csrfProtect.AddTrustedOrigin(cfg.App.Url)
+
 	// Global Middleware
 	r.Use(
 		middleware.Logger,
