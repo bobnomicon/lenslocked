@@ -246,6 +246,7 @@ goose-psql
 
 # Image uploads
 images/
+app/images/
 
 # Modd
 modd.conf
