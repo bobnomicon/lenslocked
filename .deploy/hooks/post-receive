@@ -10,7 +10,7 @@ echo "Deploying main branch to production..."
 cd ~/apps/lenslocked
 git --work-tree=$HOME/apps/lenslocked \
     --git-dir=$HOME/repos/lenslocked.git \
-    checkout -f spike/s24
+    checkout -f main
 echo "Restarting services..."
 docker compose \
   -f docker-compose.yml \
