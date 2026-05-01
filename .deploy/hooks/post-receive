@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# NOTE: Must be manually updated on the server in the `hooks` directory of the repository.
+
+while read oldrev newrev ref
+do
+if [[ $ref =~ .*/main$ ]];
+then
+echo "Deploying main branch to production..."
+cd ~/apps/lenslocked
+git --work-tree=$HOME/apps/lenslocked \
+    --git-dir=$HOME/repos/lenslocked.git \
+    checkout -f spike/s24
+echo "Restarting services..."
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.production.yml \
+  up --build --force-recreate -d
+echo "Services restarted."
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.production.yml \
+  ls
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.production.yml \
+  ps
+else
+echo "Ref $ref successfully received, but only the main branch will be deployed."
+fi
+done
