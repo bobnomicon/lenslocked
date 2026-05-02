@@ -16,6 +16,9 @@ RUN go build -v -o ./server ./cmd/server
 
 FROM ubuntu:latest
 WORKDIR /
+RUN apt-get update && \
+    apt-get install -y ca-certificates && \
+    update-ca-certificates
 COPY --from=tailwind-builder /tailwind/assets ./assets
 COPY --from=builder /app/server ./server
 
