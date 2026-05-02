@@ -18,6 +18,7 @@ type config struct {
 	SMTP email.SMTPConfig
 	Server struct {
 		Protocol string
+		Host string
 		Port string
 	}
 	App struct {
@@ -48,7 +49,9 @@ func loadEnvConfig() (config, error) {
 	// Set config
 	cfg.PSQL = models.DefaultPostgresConfig()
 	cfg.SMTP = email.DefaultSMTPConfig()
-	cfg.Server.Port = ":" + os.Getenv("SERVER_PORT")
+	cfg.Server.Protocol = os.Getenv("SERVER_PROTOCOL")
+	cfg.Server.Host = os.Getenv("SERVER_HOST")
+	cfg.Server.Port = os.Getenv("SERVER_PORT")
 	cfg.App.Url = os.Getenv("APP_URL")
 	cfg.App.ImagesDir = os.Getenv("APP_IMAGES_DIR")
 	cfg.App.ImagesExt = os.Getenv("APP_IMAGES_EXT")
@@ -116,7 +119,8 @@ func run(cfg config) error {
 
 	// Start HTTP server and listen on specified port
 	fmt.Printf("Starting server on port %s...\n", cfg.Server.Port)
-	return http.ListenAndServe(cfg.Server.Port, router(&server, cfg))
+	addr := ":" + cfg.Server.Port
+	return http.ListenAndServe(addr, router(&server, cfg))
 }
 
 func main() {

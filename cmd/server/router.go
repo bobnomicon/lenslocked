@@ -1,12 +1,23 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/bobnomicon/lenslocked/controllers"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
+
+// Formats the origin for CSRF protection
+func formatOrigin(protocol, host, port string) string {
+	if host != "localhost" {
+		// Production
+		return fmt.Sprintf("%s://%s", protocol, host)
+	}
+	// Development (include port)
+	return fmt.Sprintf("%s://%s:%s", protocol, host, port)
+}
 
 func routes(r *chi.Mux, s *server) {
 	// Static assets
@@ -65,7 +76,7 @@ func router(s *server, cfg config) http.Handler {
 
 	// CSRF Protection
 	csrfProtect := http.NewCrossOriginProtection()
-	csrfProtect.AddTrustedOrigin(cfg.App.Url)
+	csrfProtect.AddTrustedOrigin(formatOrigin(cfg.Server.Protocol, cfg.Server.Host, cfg.Server.Port))
 
 	// Global Middleware
 	r.Use(
