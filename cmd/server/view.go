@@ -11,12 +11,6 @@ func parseTemplates(s *server) {
 	s.Controllers.Static.Templates.Home = views.Must(views.ParseFS(templates.FS,
 		"home.gohtml", "layout.gohtml",
 	))
-	s.Controllers.Static.Templates.Contact = views.Must(views.ParseFS(templates.FS,
-		"contact.gohtml", "layout.gohtml",
-	))
-	s.Controllers.Static.Templates.FAQ = views.Must(views.ParseFS(templates.FS,
-		"faq.gohtml", "layout.gohtml",
-	))
 
 	// Parse users templates
 	s.Controllers.Users.Templates.SignUp = views.Must(views.ParseFS(templates.FS,

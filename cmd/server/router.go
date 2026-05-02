@@ -14,8 +14,6 @@ func routes(r *chi.Mux, s *server) {
 
 	// Static routes
 	r.Get("/", controllers.StaticHandler(s.Controllers.Static.Templates.Home))
-	r.Get("/contact", controllers.StaticHandler(s.Controllers.Static.Templates.Contact))
-	r.Get("/faq", controllers.FAQ(s.Controllers.Static.Templates.FAQ))
 
 	// Users routes
 	r.Get("/forgot-password", s.Controllers.Users.ForgotPassword)
